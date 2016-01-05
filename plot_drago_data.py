@@ -1,6 +1,7 @@
 """ Plot Dragon Board Raw
 
-Show drag data interactively
+Show drag data interactively. Just click on the plotting canvas to
+see the next event.
 
 
 Usage:
@@ -25,10 +26,11 @@ class DragoBrowser(object):
 
     def __init__(self, generator):
         self.generator = generator
+        self.drago_event = next(generator)
+        self.update()
 
     def onmouserelease(self, event):
         self.drago_event = next(generator)
-        # print(self.drago_event)
         self.update()
 
     def update(self):
@@ -41,13 +43,13 @@ class DragoBrowser(object):
         for i in range(14):
             sc = stop_cells[i%8]
             x = np.arange(sc, sc+read_depth)
-            ax1.plot(x, d[i], '.:', label=str(i))
+            ax1.plot(x, d[i], '.', label=str(i))
 
         ax2.set_title("High Gain Data")
         for i in range(14, 16):
             sc = stop_cells[i%8]
             x = np.arange(sc, sc+read_depth)
-            ax2.plot(x, d[i], '.:', label=str(i))
+            ax2.plot(x, d[i], '.', label=str(i))
 
         fig.canvas.draw()
 
@@ -59,7 +61,7 @@ if __name__ == '__main__':
     fig, (ax1, ax2) = plt.subplots(2, 1)
     ax1.set_title("DragoCam raw data. {}".format(arguments["<filename>"]))
     browser = DragoBrowser(generator)
-
+    fig.suptitle("Click somewhere to see the next event")
     fig.canvas.mpl_connect('button_release_event', browser.onmouserelease)
 
     plt.show()
