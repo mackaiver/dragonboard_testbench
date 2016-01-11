@@ -39,13 +39,13 @@ class DragoBrowser(object):
         ax1.cla()
         header, read_depth, d = self.drago_event
         stop_cells = header[3]
-        ax1.set_title("Low Gain Data")
+        ax1.set_title("Raw Data")
         for i in range(14):
             sc = stop_cells[i%8]
             x = np.arange(sc, sc+read_depth)
             ax1.plot(x, d[i], '.', label=str(i))
 
-        ax2.set_title("High Gain Data")
+        ax2.set_title("DRS Tag Data")
         for i in range(14, 16):
             sc = stop_cells[i%8]
             x = np.arange(sc, sc+read_depth)
