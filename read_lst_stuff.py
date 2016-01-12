@@ -12,6 +12,7 @@ Event = namedtuple('Event', ['header', 'roi', 'data'])
 
 max_read_depth = 4096
 header_size_in_bytes = 48
+stop_cell_size = 16
 expected_relative_address_of_flag = 16
 timestamp_conversion_to_s = 7.5e-9
 
@@ -37,7 +38,7 @@ def read_header(f, flag=None):
     if a *flag* is provided, we can check if the header
     looks correct. If not, we can't check anything.
     '''
-    chunk = f.read(header_size_in_bytes)
+    chunk = f.read(header_size_in_bytes - stop_cell_size)
     # the format string:
     #   ! -> network endian order
     #   I -> integer
@@ -49,10 +50,9 @@ def read_header(f, flag=None):
         trigger_id,
         clock,
         found_flag,
-        stop_cells,
-    ) = struct.unpack('!IIQ16s8H', chunk)
+    ) = struct.unpack('!IIQ16s', chunk)
 
-    stop_cells = np.array(stop_cells)
+    stop_cells = np.array(struct.unpack('!8H', f.read(stop_cell_size)))
     timestamp_in_s = clock * timestamp_conversion_to_s
 
     if flag is not None:
