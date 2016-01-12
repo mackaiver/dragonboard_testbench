@@ -2,6 +2,13 @@
 
 import struct
 import numpy as np
+from collections import namedtuple
+
+EventHeader = namedtuple('EventHeader', [
+    'event_counter', 'trigger_counter', 'timestamp', 'stop_cells', 'flag'
+])
+
+Event = namedtuple('Event', ['header', 'roi', 'data'])
 
 max_read_depth = 4096
 header_size_in_bytes = 48
@@ -25,33 +32,39 @@ def get_read_depth(event_size):
 
 
 def read_header(f, flag=None):
-    """ return event header from file f
-
-    event_header is a tuple like this:
-        (event_id, trigger_id, timestamp, stop_cells[8])
+    ''' return EventHeader from file f
 
     if a *flag* is provided, we can check if the header
     looks correct. If not, we can't check anything.
-    """
+    '''
     chunk = f.read(header_size_in_bytes)
-    #the format string: ! -> network endian order. I -> integer Q unsingned long
-    # then 16 padding bytes and then 8 unsigned shorts
-    event_header = struct.unpack('!IIQ16x8H', chunk)
-    event_id = event_header[0]
-    trigger_id = event_header[1]
-    timestamp_in_s = event_header[2] * timestamp_conversion_to_s
-    stop_cells = np.array(event_header[3:])
+    # the format string:
+    #   ! -> network endian order
+    #   I -> integer
+    #   Q -> unsingned long
+    #   s -> char
+    #   H -> unsigned short
+    (
+        event_id,
+        trigger_id,
+        clock,
+        found_flag,
+        stop_cells,
+    ) = struct.unpack('!IIQ16s8H', chunk)
+
+    stop_cells = np.array(stop_cells)
+    timestamp_in_s = clock * timestamp_conversion_to_s
 
     if flag is not None:
-        try:
-            assert chunk.find(flag) == expected_relative_address_of_flag
-        except AssertionError:
-            print("event header looks wrong: "
-                +"flag is not at the right position\n"
-                +"event header:"
-                +"  {0}".format(event_header))
+        msg = ('event header looks wrong: '
+               'flag is not at the right position\n'
+               'found: {}, expected: {}'.format(found_flag, flag))
 
-    return (event_id, trigger_id, timestamp_in_s, stop_cells)
+        assert chunk.find(flag) == expected_relative_address_of_flag, msg
+
+    return EventHeader(
+        event_id, trigger_id, timestamp_in_s, stop_cells, found_flag
+    )
 
 
 def read_data(f, read_depth):
@@ -124,10 +137,7 @@ def event_generator(file_descriptor):
             event_size = guess_event_size(f)
             read_depth = get_read_depth(event_size)
             data = read_data(f, read_depth)
-            yield (event_header, read_depth, data)
+            yield Event(event_header, read_depth, data)
 
         except struct.error:
-            print("struct error")
             raise StopIteration
-
-
