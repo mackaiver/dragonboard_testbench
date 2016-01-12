@@ -110,24 +110,10 @@ def guess_event_size(f):
     return event_size
 
 
-def read_entire_file_into_memory(path):
-    """ return list of events:
-    an event is:
-        (event_header, read_depth, adc_data_2d_array)
-    """
-    f = open(path, "rb")
-
-    event_list = []
-    while True:
-        try:
-            event_header = read_header(f)
-            event_size = guess_event_size(f)
-            read_depth = get_read_depth(event_size)
-            data = read_data(f, read_depth)
-            event_list.append((event_header, read_depth, data))
-        except struct.error:
-            break
-    return event_list
+def read(path):
+    ''' return list of Events in file path '''
+    with open(path, 'rb') as f:
+        return list(event_generator(f))
 
 
 def event_generator(file_descriptor):
