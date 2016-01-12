@@ -10,14 +10,14 @@ timestamp_conversion_to_s = 7.5e-9
 
 
 def get_event_size(read_depth):
-    """ return event_size in bytes, based on read_depth in samples.
-    """
+    ''' return event_size in bytes, based on read_depth in samples.
+    '''
     return 16 * (2 * read_depth + 3)
 
 
 def get_read_depth(event_size):
-    """ return read_depth in samples, based on event_size in bytes.
-    """
+    ''' return read_depth in samples, based on event_size in bytes.
+    '''
 
     read_depth = ((event_size / 16) - 3) / 2
     assert read_depth.is_integer()
@@ -55,14 +55,14 @@ def read_header(f, flag=None):
 
 
 def read_data(f, read_depth):
-    """ return array of raw ADC data, shape:(16, read_depth)
+    ''' return array of raw ADC data, shape:(16, read_depth)
 
     The ADC data, is just a contiguous bunch of 16bit integers
     So its easy to read.
     However the assignment of integers to the 16 channels
     is not soo easy. I hope I did it correctly.
-    """
-    d = np.fromfile(f, '>i2', 2*8*read_depth)
+    '''
+    d = np.fromfile(f, '>i2', 2 * 8 * read_depth)
     N = 8 * read_depth
 
     d1, d2 = d[:N], d[N:]
@@ -70,15 +70,16 @@ def read_data(f, read_depth):
     d1 = d1.reshape(read_depth, 8).T
     d2 = d2.reshape(read_depth, 8).T
 
-    d = np.vstack((d1,d2))
+    d = np.vstack((d1, d2))
     return d
 
+
 def guess_event_size(f):
-    """ try to find out the event size for this file.
+    ''' try to find out the event size for this file.
 
     Each even header contains a flag.
     The distance between two flags is just the event size.
-    """
+    '''
     current_position = f.tell()
     f.seek(0)
 
@@ -96,7 +97,8 @@ def guess_event_size(f):
     # Note! At first i though the flag is always this: flag = b'\xf0\x02' * 8
     # But then I found files, where this is not true,
     # Now I make another assumption about the flag.
-    # I assume: The flag is the the bytestring from address 16 to 32 of the file:
+    # I assume: The flag is the the bytestring from address 16 to 32 of the
+    # file:
 
     flag = chunk[16:32]
     first_flag = chunk.find(flag)
