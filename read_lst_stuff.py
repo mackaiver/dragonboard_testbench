@@ -1,36 +1,13 @@
-""" Plot Dragon Board Raw
-
-This little script serves as an example implementation
-for reading Dragon board raw files (file extension .dat)
-
-To provide some example use of the data, it is
-plotted event by event.
-
-Statisitcal analysis of the data.
-or conversion to a more convenient format like:
-    csv, root, hdf5, json
-is not shown here.
-
-
-Usage:
-  read_lst_stuff.py <filename>
-  read_lst_stuff.py (-h | --help)
-  read_lst_stuff.py --version
-
-Options:
-  -h --help     Show this screen.
-  --version     Show version.
-
-"""
+''' Read Dragon Board Data '''
 
 import struct
 import numpy as np
-from docopt import docopt
 
 max_read_depth = 4096
 header_size_in_bytes = 48
 expected_relative_address_of_flag = 16
 timestamp_conversion_to_s = 7.5e-9
+
 
 def get_event_size(read_depth):
     """ return event_size in bytes, based on read_depth in samples.
@@ -130,27 +107,6 @@ def guess_event_size(f):
 
     return event_size
 
-def plot_event(event):
-    """ Well, we plot all 16 channels here.
-
-    Might be better to plot, low-gain and high-gain
-    to different sub-plots.
-    """
-    header, read_depth, d = event
-    stop_cells = header[3]
-
-    plt.clf()
-    plt.title("event_id {0}, trigger_id {1}, timestamp {2:0.3}ms\nread_depth {3}".format(
-        header[0], header[1], header[2]*7.5e-6, read_depth))
-
-    for i in range(16):
-        sc = stop_cells[i%8]
-        x = np.arange(sc, sc+read_depth)
-        plt.plot(x, d[i], '.:', label=str(i))
-
-    plt.legend()
-    plt.grid()
-
 
 def read_entire_file_into_memory(path):
     """ return list of events:
@@ -171,6 +127,7 @@ def read_entire_file_into_memory(path):
             break
     return event_list
 
+
 def event_generator(file_descriptor):
     f = file_descriptor
     while True:
@@ -186,16 +143,3 @@ def event_generator(file_descriptor):
             raise StopIteration
 
 
-if __name__ == '__main__':
-    arguments = docopt(__doc__, version='Dragon Data Plotter 0.1alpha')
-
-    event_list = read_entire_file_into_memory(arguments["<filename>"])
-
-    import matplotlib.pyplot as plt
-    plt.ion()
-
-    for event in event_list:
-        plot_event(event)
-        answer = input("q+Enter - quit; Enter - next:")
-        if 'q' in answer.lower():
-            break
