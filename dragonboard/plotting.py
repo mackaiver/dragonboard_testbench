@@ -100,6 +100,19 @@ class DragonBrowser(QtGui.QMainWindow):
             layout.addWidget(button)
         self.statusBar().insertWidget(0, bottom_frame)
 
+        button = QtGui.QPushButton(bottom_frame)
+        button.clicked.connect(self.previous_event)
+        button.setFocusPolicy(QtCore.Qt.NoFocus)
+        button.setText('Previous')
+        layout.addWidget(button)
+
+        button = QtGui.QPushButton(bottom_frame)
+        button.clicked.connect(self.next_event)
+        button.setFocusPolicy(QtCore.Qt.NoFocus)
+        button.setText('Next')
+        layout.addWidget(button)
+
+
         for ax in self.axs.values():
             ax.set_xlabel('Physical Cell')
             ax.set_ylabel('ADC counts')
@@ -141,16 +154,22 @@ class DragonBrowser(QtGui.QMainWindow):
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Right:
-            self.dragon_event = next(self.generator)
-            self.update()
+            self.next_event()
 
         if event.key() == QtCore.Qt.Key_Left:
-            try:
-                self.dragon_event = self.generator.previous()
-            except ValueError:
-                pass
-            else:
-                self.update()
+            self.previous_event()
+
+    def next_event(self):
+        self.dragon_event = next(self.generator)
+        self.update()
+
+    def previous_event(self):
+        try:
+            self.dragon_event = self.generator.previous()
+        except ValueError:
+            pass
+        else:
+            self.update()
 
     def closeEvent(self, event):
         self.file.close()
