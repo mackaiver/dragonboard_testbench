@@ -5,7 +5,11 @@ import numpy as np
 from collections import namedtuple
 
 EventHeader = namedtuple('EventHeader', [
-    'event_counter', 'trigger_counter', 'timestamp', 'stop_cells', 'flag'
+    'event_counter',
+    'trigger_counter',
+    'timestamp',
+    'stop_cells',
+    'flag',
 ])
 
 Event = namedtuple('Event', ['header', 'roi', 'data'])
@@ -134,18 +138,35 @@ def guess_event_size(f):
 def read(path):
     ''' return list of Events in file path '''
     with open(path, 'rb') as f:
-        return list(event_generator(f))
+        return list(EventGenerator(f))
 
 
-def event_generator(file_descriptor):
-    f = file_descriptor
-    while True:
+class EventGenerator(object):
+    def __init__(self, file_descriptor):
+        self.file_descriptor = file_descriptor
+        self.event_size = guess_event_size(file_descriptor)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
+    def previous(self):
         try:
-            event_header = read_header(f)
-            event_size = guess_event_size(f)
+            self.file_descriptor.seek(- 2 * self.event_size, 1)
+        except OSError:
+            raise ValueError('Already at first event')
+        return self.next()
+
+    def next(self):
+        try:
+            event_header = read_header(self.file_descriptor)
+            event_size = guess_event_size(self.file_descriptor)
             roi = get_roi(event_size)
-            data = read_data(f, roi)
-            yield Event(event_header, roi, data)
+            self.roi = roi
+            data = read_data(self.file_descriptor, roi)
+            return Event(event_header, roi, data)
 
         except struct.error:
             raise StopIteration

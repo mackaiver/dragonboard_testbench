@@ -1,3 +1,4 @@
-from .io import read, event_generator, Event, EventHeader
+from .io import read, EventGenerator, Event, EventHeader
+from .plotting import DragonBrowser
 
-__all__ = ['read', 'event_generator', Event, EventHeader]
+__all__ = ['read', 'event_generator', Event, EventHeader, DragonBrowser]
