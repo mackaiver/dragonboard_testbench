@@ -1,25 +1,5 @@
-""" Plot Dragon Board Raw
-
-Show drag data interactively. Just click on the plotting canvas to
-see the next event.
-
-
-Usage:
-  plot_drago_data.py <filename>
-  plot_drago_data.py (-h | --help)
-  plot_drago_data.py --version
-
-Options:
-  -h --help     Show this screen.
-  --version     Show version.
-
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
-plt.style.use('ggplot')
-from dragonboard import event_generator
-from docopt import docopt
 
 
 class DragonBrowser(object):
@@ -28,24 +8,33 @@ class DragonBrowser(object):
         self.generator = generator
 
         self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1)
-        self.fig.suptitle("Click somewhere to see the next event")
+        self.fig.suptitle('Click somewhere to see the next event')
         self.fig.canvas.mpl_connect('key_release_event', self.onkeypress)
 
-        self.drago_event = next(self.generator)
+        self.dragon_event = next(self.generator)
         self.update()
 
     def onkeypress(self, event):
+        print(event.key)
         if event.key == 'right':
-            self.drago_event = next(self.generator)
+            self.dragon_event = next(self.generator)
             self.update()
+
+        if event.key == 'left':
+            try:
+                self.dragon_event = self.generator.previous()
+            except ValueError:
+                print('already at first event')
+            else:
+                self.update()
 
     def update(self):
 
         self.ax2.cla()
         self.ax1.cla()
-        self.ax1.set_title("Low Gain Channel")
-        self.ax2.set_title("High Gain Channel")
-        event = self.drago_event
+        self.ax1.set_title('Low Gain Channel')
+        self.ax2.set_title('High Gain Channel')
+        event = self.dragon_event
         for channel, (stop_cell, data) in enumerate(
             zip(event.header.stop_cells, event.data['low'])
         ):
@@ -66,19 +55,3 @@ class DragonBrowser(object):
 
     def show(self):
         plt.show()
-
-
-def main():
-    arguments = docopt(__doc__, version='Dragon Data Browser 0.1alpha')
-    with open(arguments["<filename>"], "rb") as f:
-        generator = event_generator(f)
-
-        browser = DragonBrowser(generator)
-        browser.fig.suptitle(
-            "DragoCam raw data. {}".format(arguments["<filename>"])
-        )
-        browser.show()
-
-
-if __name__ == '__main__':
-    main()
