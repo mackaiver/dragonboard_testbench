@@ -1,5 +1,6 @@
 ''' Read Dragon Board Data '''
 
+from __future__ import division
 import struct
 import numpy as np
 from collections import namedtuple
