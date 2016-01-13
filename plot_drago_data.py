@@ -29,14 +29,15 @@ class DragonBrowser(object):
 
         self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1)
         self.fig.suptitle("Click somewhere to see the next event")
-        self.fig.canvas.mpl_connect('button_release_event', self.onmouserelease)
+        self.fig.canvas.mpl_connect('key_release_event', self.onkeypress)
 
         self.drago_event = next(self.generator)
         self.update()
 
-    def onmouserelease(self, event):
-        self.drago_event = next(self.generator)
-        self.update()
+    def onkeypress(self, event):
+        if event.key == 'right':
+            self.drago_event = next(self.generator)
+            self.update()
 
     def update(self):
 
