@@ -1,6 +1,6 @@
 ''' Read Dragon Board Data '''
 
-from __future__ import division, print_function, absolut_import
+from __future__ import division, print_function, absolute_import
 import struct
 import numpy as np
 from collections import namedtuple
@@ -91,11 +91,11 @@ def read_data(f, roi):
     )
     data_odd = d[N/2:]
     data_even = d[:N/2]
-    for i, channel in zip(range(num_channels // 2), range(0, num_channels, 2)):
-        array['high'][channel] = data_even[i::8]
-        array['low'][channel] = data_even[i + 1::8]
-        array['high'][channel + 1] = data_odd[i::8]
-        array['low'][channel + 1] = data_odd[i + 1::8]
+    for channel in range(0, num_channels, 2):
+        array['high'][channel] = data_even[channel::8]
+        array['low'][channel] = data_even[channel+1::8]
+        array['high'][channel + 1] = data_odd[channel::8]
+        array['low'][channel + 1] = data_odd[channel+1::8]
 
     return array
 
