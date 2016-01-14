@@ -82,6 +82,7 @@ class DragonBrowser(QtGui.QMainWindow):
         for channel in range(self.n_channels):
             for gain in self.gains:
                 plot, = self.axs[gain].plot([], [])
+                plot.set_visible(False)
                 self.plots[gain][channel] = plot
 
             button = QtGui.QPushButton(bottom_frame)
@@ -95,12 +96,12 @@ class DragonBrowser(QtGui.QMainWindow):
             layout.addWidget(button)
 
             cb = QtGui.QCheckBox(str(channel), bottom_frame)
-            if channel != 7:
-                cb.toggle()
             cb.setFocusPolicy(QtCore.Qt.NoFocus)
             cb.stateChanged.connect(
                 partial(self.toggle_channel, channel=channel)
             )
+            if channel != 7:
+                cb.toggle()
             layout.addWidget(cb)
         self.statusBar().insertWidget(0, bottom_frame)
 
