@@ -51,7 +51,10 @@ class DragonBrowser(QtGui.QMainWindow):
             filename = QtGui.QFileDialog.getOpenFileName(
                 self, 'Open file', os.environ['HOME']
             )
-        self.file = open(filename, 'rb')
+        if filename:
+            self.file = open(filename, 'rb')
+        else:
+            raise IOError('No File selected')
 
     def init_gui(self):
         self.canvas = FigureCanvas(self, 12.8, 7.2)
@@ -91,7 +94,8 @@ class DragonBrowser(QtGui.QMainWindow):
             layout.addWidget(button)
 
             cb = QtGui.QCheckBox(str(channel), bottom_frame)
-            cb.toggle()
+            if channel != 7:
+                cb.toggle()
             cb.setFocusPolicy(QtCore.Qt.NoFocus)
             cb.stateChanged.connect(
                 partial(self.toggle_channel, channel=channel)
@@ -102,13 +106,13 @@ class DragonBrowser(QtGui.QMainWindow):
         button = QtGui.QPushButton(bottom_frame)
         button.clicked.connect(self.previous_event)
         button.setFocusPolicy(QtCore.Qt.NoFocus)
-        button.setText('Previous')
+        button.setText('Previous Event')
         layout.addWidget(button)
 
         button = QtGui.QPushButton(bottom_frame)
         button.clicked.connect(self.next_event)
         button.setFocusPolicy(QtCore.Qt.NoFocus)
-        button.setText('Next')
+        button.setText('Next Event')
         layout.addWidget(button)
 
 
