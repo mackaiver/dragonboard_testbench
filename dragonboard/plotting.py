@@ -80,15 +80,6 @@ class DragonBrowser(QtGui.QMainWindow):
                 plot, = self.axs[gain].plot([], [])
                 self.plots[gain][channel] = plot
 
-            cb = QtGui.QCheckBox(str(channel), bottom_frame)
-            # cb.move(0, 25 * channel + 100)
-            cb.toggle()
-            cb.setFocusPolicy(QtCore.Qt.NoFocus)
-            cb.stateChanged.connect(
-                partial(self.toggle_channel, channel=channel)
-            )
-            layout.addWidget(cb)
-
             button = QtGui.QPushButton(bottom_frame)
             button.setStyleSheet('background-color: rgb({}, {}, {});'.format(
                 *mpl2rgb(plot.get_color())
@@ -98,6 +89,14 @@ class DragonBrowser(QtGui.QMainWindow):
             )
             button.setFocusPolicy(QtCore.Qt.NoFocus)
             layout.addWidget(button)
+
+            cb = QtGui.QCheckBox(str(channel), bottom_frame)
+            cb.toggle()
+            cb.setFocusPolicy(QtCore.Qt.NoFocus)
+            cb.stateChanged.connect(
+                partial(self.toggle_channel, channel=channel)
+            )
+            layout.addWidget(cb)
         self.statusBar().insertWidget(0, bottom_frame)
 
         button = QtGui.QPushButton(bottom_frame)
