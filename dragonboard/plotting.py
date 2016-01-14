@@ -105,6 +105,12 @@ class DragonBrowser(QtGui.QMainWindow):
             if channel != 7:
                 cb.toggle()
             layout.addWidget(cb)
+
+        cb = QtGui.QCheckBox('Rescale', bottom_frame)
+        cb.setFocusPolicy(QtCore.Qt.NoFocus)
+        cb.toggle()
+        layout.addWidget(cb)
+        self.rescale_box = cb
         self.statusBar().insertWidget(0, bottom_frame)
 
         button = QtGui.QPushButton(bottom_frame)
@@ -118,7 +124,6 @@ class DragonBrowser(QtGui.QMainWindow):
         button.setFocusPolicy(QtCore.Qt.NoFocus)
         button.setText('Next Event')
         layout.addWidget(button)
-
 
         for ax in self.axs.values():
             ax.set_xlabel('Physical Cell')
@@ -152,6 +157,8 @@ class DragonBrowser(QtGui.QMainWindow):
 
         for ax in self.axs.values():
             ax.relim()
+            if self.rescale_box.isChecked():
+                ax.autoscale(enable=True)
             ax.autoscale_view()
 
         self.fig.canvas.draw()
