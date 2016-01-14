@@ -1,5 +1,6 @@
 ''' Read Dragon Board Data '''
 
+from __future__ import division, print_function, absolute_import
 import struct
 import numpy as np
 from collections import namedtuple
@@ -90,11 +91,11 @@ def read_data(f, roi):
     )
     data_odd = d[N/2:]
     data_even = d[:N/2]
-    for i, channel in zip(range(num_channels // 2), range(0, num_channels, 2)):
-        array['high'][channel] = data_even[i::8]
-        array['low'][channel] = data_even[i + 1::8]
-        array['high'][channel + 1] = data_odd[i::8]
-        array['low'][channel + 1] = data_odd[i + 1::8]
+    for channel in range(0, num_channels, 2):
+        array['high'][channel] = data_even[channel::8]
+        array['low'][channel] = data_even[channel+1::8]
+        array['high'][channel + 1] = data_odd[channel::8]
+        array['low'][channel + 1] = data_odd[channel+1::8]
 
     return array
 
@@ -135,16 +136,17 @@ def guess_event_size(f):
     return event_size
 
 
-def read(path):
+def read(path, max_events=None):
     ''' return list of Events in file path '''
     with open(path, 'rb') as f:
-        return list(EventGenerator(f))
+        return list(EventGenerator(f, max_events=None))
 
 
 class EventGenerator(object):
-    def __init__(self, file_descriptor):
+    def __init__(self, file_descriptor, max_events=None):
         self.file_descriptor = file_descriptor
         self.event_size = guess_event_size(file_descriptor)
+        self.max_events = max_events
 
     def __iter__(self):
         return self
@@ -166,6 +168,11 @@ class EventGenerator(object):
             roi = get_roi(event_size)
             self.roi = roi
             data = read_data(self.file_descriptor, roi)
+
+            if self.max_events is not None:
+                if event_header.event_counter > self.max_events:
+                    raise StopIteration
+
             return Event(event_header, roi, data)
 
         except struct.error:

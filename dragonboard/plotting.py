@@ -1,3 +1,4 @@
+from __future__ import division, print_function, absolute_import
 import numpy as np
 from PyQt4 import QtCore, QtGui
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
