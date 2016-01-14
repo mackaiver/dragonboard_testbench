@@ -9,4 +9,9 @@ setup(
     author_email='kai.bruegge@tu-dortmund.de',
     license='MIT',
     packages=['dragonboard'],
+    entry_points={
+        'gui_scripts': [
+            'dragonviewer = dragonboard.__main__:main'
+        ]
+    }
 )
