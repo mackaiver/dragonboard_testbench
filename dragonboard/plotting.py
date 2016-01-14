@@ -15,6 +15,11 @@ from .io import EventGenerator
 color_converter = ColorConverter()
 
 
+class NavigationToolbar(NavigationToolbar2QT):
+    toolitems = [t for t in NavigationToolbar2QT.toolitems if
+                 t[0] in ('Home', 'Pan', 'Zoom', 'Subplots', 'Save', None)]
+
+
 def mpl2rgb(color):
     return tuple(int(c * 255) for c in color_converter.to_rgb(color))
 
@@ -68,7 +73,7 @@ class DragonBrowser(QtGui.QMainWindow):
         self.axs['low'].set_title('Low Gain Channel')
         self.axs['high'].set_title('High Gain Channel')
 
-        self.navbar = NavigationToolbar2QT(self.canvas, self)
+        self.navbar = NavigationToolbar(self.canvas, self)
         self.toolbar = self.addToolBar('Test')
         self.toolbar.addWidget(self.navbar)
 
