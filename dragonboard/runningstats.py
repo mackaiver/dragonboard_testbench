@@ -1,4 +1,4 @@
-from __future__ import division, print_function, absolut_import
+from __future__ import division, print_function, absolute_import
 import numpy as np
 
 

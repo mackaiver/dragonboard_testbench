@@ -1,6 +1,6 @@
 ''' Read Dragon Board Data '''
 
-from __future__ import division, print_function, absolut_import
+from __future__ import division, print_function, absolute_import
 import struct
 import numpy as np
 from collections import namedtuple
