@@ -81,7 +81,9 @@ class DragonBrowser(QtGui.QMainWindow):
         self.plots = defaultdict(dict)
         for channel in range(self.n_channels):
             for gain in self.gains:
-                plot, = self.axs[gain].plot([], [])
+                plot, = self.axs[gain].plot(
+                    [], [], label='Ch{}'.format(channel)
+                )
                 plot.set_visible(False)
                 self.plots[gain][channel] = plot
 
@@ -165,8 +167,12 @@ class DragonBrowser(QtGui.QMainWindow):
             self.previous_event()
 
     def next_event(self):
-        self.dragon_event = next(self.generator)
-        self.update()
+        try:
+            self.dragon_event = next(self.generator)
+        except StopIteration:
+            pass
+        else:
+            self.update()
 
     def previous_event(self):
         try:
