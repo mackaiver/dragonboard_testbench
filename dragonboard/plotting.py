@@ -111,7 +111,12 @@ class DragonBrowser(QtGui.QMainWindow):
         cb.toggle()
         layout.addWidget(cb)
         self.rescale_box = cb
-        self.statusBar().insertWidget(0, bottom_frame)
+
+        cb = QtGui.QCheckBox('Physical Cell', bottom_frame)
+        cb.setFocusPolicy(QtCore.Qt.NoFocus)
+        cb.stateChanged.connect(self.update)
+        layout.addWidget(cb)
+        self.cb_physical = cb
 
         button = QtGui.QPushButton(bottom_frame)
         button.clicked.connect(self.previous_event)
@@ -125,9 +130,10 @@ class DragonBrowser(QtGui.QMainWindow):
         button.setText('Next Event')
         layout.addWidget(button)
 
+        self.statusBar().insertWidget(0, bottom_frame)
         for ax in self.axs.values():
-            ax.set_xlabel('Physical Cell')
-            ax.set_ylabel('ADC counts')
+            ax.set_ylabel('ADC Counts')
+        self.axs['high'].set_xlabel('Time Slice')
 
         self.fig.tight_layout()
         self.update()
@@ -149,10 +155,16 @@ class DragonBrowser(QtGui.QMainWindow):
 
     def update(self):
         event = self.dragon_event
+        if self.cb_physical.isChecked():
+            self.axs['high'].set_xlabel('Physical Cell')
+        else:
+            self.axs['high'].set_xlabel('Time Slice')
 
         for gain in self.gains:
             for channel, stop_cell in enumerate(event.header.stop_cells):
-                x = np.arange(stop_cell, stop_cell + event.roi) % 4096
+                x = np.arange(event.roi)
+                if self.cb_physical.isChecked():
+                    x = (x + stop_cell) % 4096
                 self.plots[gain][channel].set_data(x, event.data[gain][channel])
 
         for ax in self.axs.values():
