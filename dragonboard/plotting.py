@@ -8,6 +8,7 @@ from collections import defaultdict
 from functools import partial
 from matplotlib.colors import ColorConverter
 import os
+import sys
 
 from .io import EventGenerator
 
@@ -39,23 +40,23 @@ class DragonBrowser(QtGui.QMainWindow):
 
         self.file = None
         self.open_new_file(filename)
+        if not self.file:
+            sys.exit()
         self.generator = EventGenerator(self.file)
         self.dragon_event = next(self.generator)
         self.gains = self.dragon_event.data.dtype.names
         self.n_channels = self.dragon_event.data.shape[0]
         self.init_gui()
 
-    def open_new_file(self, filename):
-        if self.file:
-            self.file.close()
+    def open_new_file(self, filename=None):
         if not filename:
             filename = QtGui.QFileDialog.getOpenFileName(
                 self, 'Open file', os.environ['HOME']
             )
         if filename:
+            if self.file:
+                self.file.close()
             self.file = open(filename, 'rb')
-        else:
-            raise IOError('No File selected')
 
     def init_gui(self):
         self.canvas = FigureCanvas(self, 12.8, 7.2)
