@@ -37,14 +37,14 @@ class DragonBrowser(object):
         self.ax2.set_title('High Gain Channel')
         event = self.dragon_event
         for channel, (stop_cell, data) in enumerate(
-            zip(event.header.stop_cells, event.data['low'])
+            zip(event.header.stop_cells['low'], event.data['low'])
         ):
 
             x = np.arange(stop_cell, stop_cell + event.roi) % 4096
             self.ax1.plot(x, data, '-', label=str(channel) + ' low')
 
         for channel, (stop_cell, data) in enumerate(
-            zip(event.header.stop_cells, event.data['high'])
+            zip(event.header.stop_cells['high'], event.data['high'])
         ):
 
             x = np.arange(stop_cell, stop_cell + event.roi) % 4096
