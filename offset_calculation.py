@@ -26,7 +26,7 @@ def offset_calc(filename):
 		pixelindex = 0
 		
 		for i in range(numevents):
-			stopcell = events[i].header.stop_cells[pixelindex]
+			stopcell = events[i].header.stop_cells["low"][pixelindex]
 			roi = events[i].roi
 			pedestalvalues[i][stopcell:stopcell+roi] = events[i].data["low"][pixelindex]
 			
