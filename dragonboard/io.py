@@ -59,7 +59,36 @@ def read_header(f, flag=None):
         clock,
         found_flag,
     ) = struct.unpack('!IIQ16s', chunk)
-    stop_cells = np.frombuffer(f.read(stop_cell_size), dtype=stop_cell_dtype)
+    stop_cells_for_user = np.empty(
+        num_channels, dtype=[('low', 'i2'), ('high', 'i2')]
+    )
+    stop_cells__in_drs4_chip_order = np.frombuffer(
+        f.read(stop_cell_size), dtype=stop_cell_dtype)
+
+    stop_cells_for_user["high"][0] = stop_cells__in_drs4_chip_order[0]
+    stop_cells_for_user["high"][1] = stop_cells__in_drs4_chip_order[0]
+
+    stop_cells_for_user["high"][2] = stop_cells__in_drs4_chip_order[2]
+    stop_cells_for_user["high"][3] = stop_cells__in_drs4_chip_order[2]
+
+    stop_cells_for_user["high"][4] = stop_cells__in_drs4_chip_order[4]
+    stop_cells_for_user["high"][5] = stop_cells__in_drs4_chip_order[4]
+
+    stop_cells_for_user["high"][6] = stop_cells__in_drs4_chip_order[6]
+    stop_cells_for_user["high"][7] = stop_cells__in_drs4_chip_order[6]
+
+    stop_cells_for_user["low"][0] = stop_cells__in_drs4_chip_order[1]
+    stop_cells_for_user["low"][1] = stop_cells__in_drs4_chip_order[1]
+
+    stop_cells_for_user["low"][2] = stop_cells__in_drs4_chip_order[3]
+    stop_cells_for_user["low"][3] = stop_cells__in_drs4_chip_order[3]
+
+    stop_cells_for_user["low"][4] = stop_cells__in_drs4_chip_order[5]
+    stop_cells_for_user["low"][5] = stop_cells__in_drs4_chip_order[5]
+
+    stop_cells_for_user["low"][6] = stop_cells__in_drs4_chip_order[7]
+    stop_cells_for_user["low"][7] = stop_cells__in_drs4_chip_order[7]
+
     timestamp_in_s = clock * timestamp_conversion_to_s
 
     if flag is not None:
@@ -70,7 +99,7 @@ def read_header(f, flag=None):
         assert chunk.find(flag) == expected_relative_address_of_flag, msg
 
     return EventHeader(
-        event_id, trigger_id, timestamp_in_s, stop_cells, found_flag
+        event_id, trigger_id, timestamp_in_s, stop_cells_for_user, found_flag
     )
 
 
@@ -89,13 +118,13 @@ def read_data(f, roi):
     array = np.empty(
         num_channels, dtype=[('low', roi_dtype), ('high', roi_dtype)]
     )
-    data_odd = d[N/2:]
-    data_even = d[:N/2]
+    data_odd = d[N / 2:]
+    data_even = d[:N / 2]
     for channel in range(0, num_channels, 2):
         array['high'][channel] = data_even[channel::8]
-        array['low'][channel] = data_even[channel+1::8]
+        array['low'][channel] = data_even[channel + 1::8]
         array['high'][channel + 1] = data_odd[channel::8]
-        array['low'][channel + 1] = data_odd[channel+1::8]
+        array['low'][channel + 1] = data_odd[channel + 1::8]
 
     return array
 
@@ -143,6 +172,7 @@ def read(path):
 
 
 class EventGenerator(object):
+
     def __init__(self, file_descriptor):
         self.file_descriptor = file_descriptor
         self.event_size = guess_event_size(file_descriptor)
