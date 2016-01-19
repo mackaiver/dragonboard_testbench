@@ -225,7 +225,7 @@ def get_file_size(f):
 
 class File(object):
 
-    def __init__(self, path, max_events=None):
+    def __init__(self, path, max_events=None, return_structured_array=True):
         self.path = path
         self.file_descriptor = open(self.path, "rb")
         self.event_size = measure_event_size(self.file_descriptor)
@@ -237,6 +237,13 @@ class File(object):
         self.max_events = max_events
 
         self.__current_event_pointer = 0
+
+        if structured_array:
+            self.read_header = read_header
+            self.read_data = read_data
+        else:
+            self.read_header = read_header_3d
+            self.read_data = read_data_3d
 
     def __getitem__(self, index_or_slice):
         if isinstance(index_or_slice, slice):
@@ -276,8 +283,8 @@ class File(object):
 
     def __next__(self):
         try:
-            event_header = read_header(self.file_descriptor)
-            data = read_data(self.file_descriptor, self.roi)
+            event_header = self.read_header(self.file_descriptor)
+            data = self.read_data(self.file_descriptor, self.roi)
 
             if self.max_events is not None:
                 if event_header.event_counter > self.max_events:
