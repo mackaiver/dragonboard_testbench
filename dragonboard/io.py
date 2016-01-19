@@ -238,7 +238,7 @@ class File(object):
 
         self.__current_event_pointer = 0
 
-        if structured_array:
+        if return_structured_array:
             self.read_header = read_header
             self.read_data = read_data
         else:
