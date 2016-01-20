@@ -299,3 +299,12 @@ class File(object):
     def seek_event(self, needed_event_id):
         # we start with a stupid implementation:
         self.file_descriptor.seek(needed_event_id * self.event_size)
+
+    def read(self):
+        return list(self)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.file_descriptor.close()

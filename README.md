@@ -17,6 +17,66 @@ pip install -e lst_calibration
 
 ## Usage
 
+### Reading data
+
+For easy access to the data stored in the dragon .data format
+we provide the `dragonboard.File` interface.
+
+To loop over all events in a file, use:
+```{python}
+import dragonboard
+
+with dragonboard.File('Ped444706_1.dat') as ped_file:
+    for event in ped_file:
+        # do something awesome
+```
+
+If you want to read everything into memory, you can use the `.read`
+method:
+
+```{python}
+with dragonboard.File('Ped444706_1.dat') as ped_file:
+    events = ped_file.read()
+
+print(len(events))
+```
+
+If you just want a few events to test yout code, provide 
+the `max_events` keyword:
+
+```{python}
+with dragonboard.File('Ped444706_1.dat', max_events=10) as ped_file:
+    events = ped_file.read()
+
+print(len(events))
+```
+
+An event is currently just a `collections.namedtuple` containing
+a header, the roi and the data.
+
+As default, data is a `numpy` structured array with two columns for
+the different gains (`high` and `low`) and 8 rows for every pixel.
+In each cell is a `roi`-length array with the raw data.
+
+To plot the `high`-gain channel of pixel 3 of the first event you could do:
+
+
+```{python}
+import dragonboard
+import matplotlib.pyplot as plt
+
+
+with dragonboard.File('Ped444706_1.dat') as ped_file:
+    event = ped_file[0]
+
+plt.plot(event.data['high'][3])
+plt.show()
+
+```
+
+
+
+
 
 ### DragonViewer
 
