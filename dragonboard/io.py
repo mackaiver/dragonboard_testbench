@@ -93,20 +93,13 @@ def read_data(f, roi):
     shape: (num_pixel, "high"|"low", roi)
 
     '''
-    d = np.fromfile(f, '>i2', num_gains * num_channels * roi)
+    data = read_data_3d(f, roi).swapaxes(0, 1)
 
-    N = num_gains * num_channels * roi
     roi_dtype = '{}>i2'.format(roi)
-    array = np.empty(
-        num_channels, dtype=[('low', roi_dtype), ('high', roi_dtype)]
+    array = np.core.rec.fromarrays(
+        [gain for gain in data],
+        dtype=[('high', roi_dtype), ('low', roi_dtype)],
     )
-    data_odd = d[N / 2:]
-    data_even = d[:N / 2]
-    for channel in range(0, num_channels, 2):
-        array['high'][channel] = data_even[channel::8]
-        array['low'][channel] = data_even[channel + 1::8]
-        array['high'][channel + 1] = data_odd[channel::8]
-        array['low'][channel + 1] = data_odd[channel + 1::8]
 
     return array
 
@@ -122,11 +115,12 @@ def read_data_3d(f, roi):
     '''
     d = np.fromfile(f, '>i2', num_gains * num_channels * roi)
 
-    d = d.reshape(2, roi, num_channels // 2, num_gains
-                  ).swapaxes(0, 3
-                             ).reshape(num_gains, roi, num_channels
-                                       ).swapaxes(1, 2
-                                                  ).swapaxes(0, 1)
+    d = (d.reshape(2, roi, num_channels // 2, num_gains)
+         .swapaxes(0, 3)
+         .reshape(num_gains, roi, num_channels)
+         .swapaxes(1, 2)
+         .swapaxes(0, 1)
+         )
 
     # d.shape = (pixel, hi/lo, roi)
     return d
@@ -152,9 +146,13 @@ def read_header_3d(f, flag=None):
         found_flag,
     ) = struct.unpack('!IIQ16s', chunk)
     stop_cells__in_drs4_chip_order = np.frombuffer(
-        f.read(stop_cell_size), dtype=stop_cell_dtype)
-    stop_cells_for_user = np.empty((num_channels, num_gains),
-                                   dtype=stop_cells__in_drs4_chip_order.dtype)
+        f.read(stop_cell_size),
+        dtype=stop_cell_dtype,
+    )
+    stop_cells_for_user = np.empty(
+        (num_channels, num_gains),
+        dtype=stop_cells__in_drs4_chip_order.dtype,
+    )
 
     for gain in gains:
         for channel in range(num_channels):
