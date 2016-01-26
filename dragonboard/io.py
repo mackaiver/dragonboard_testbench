@@ -243,6 +243,10 @@ class File(object):
             self.read_header = read_header_3d
             self.read_data = read_data_3d
 
+    def __len__(self):
+        if self.max_events and self.max_events < self.num_events:
+            return self.max_events
+        return self.num_events
     def __getitem__(self, index_or_slice):
         if isinstance(index_or_slice, slice):
             event_ids = range(*index_or_slice.indices(self.num_events))
