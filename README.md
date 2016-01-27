@@ -24,3 +24,5 @@ you installed this module.
 `dragoviewer [<inputfile>]`
 
 If you do not provide `<inputfile>`, a file dialog will open
+
+![Alt text](/dragonviewer.png?raw=true "Optional Title")
