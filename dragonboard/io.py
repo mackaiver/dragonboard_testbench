@@ -222,6 +222,7 @@ def get_file_size(f):
 
 
 class File(object):
+    max_roi = max_roi
 
     def __init__(self, path, max_events=None, return_structured_array=True):
         self.path = path
