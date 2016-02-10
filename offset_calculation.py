@@ -11,12 +11,11 @@ annotations:
 
 
 Usage:
-  offset_calculation.py [--p] <inputdirectory> <outputdirectory>
+  offset_calculation.py <inputdirectory> <outputdirectory>
   offset_calculation.py (-h | --help)
   offset_calculation.py --version
 
 Options:
-  --p           Plot the calculated mean offsets with stdandard deviation [default: false]
   -h --help     Show this screen.
   --version     Show version.
 
@@ -26,6 +25,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dragonboard import EventGenerator
 from dragonboard.runningstats import RunningStats
+import dragonboard
 from tqdm import tqdm
 import glob
 import os
@@ -33,30 +33,31 @@ from docopt import docopt
 import sys
 
 
-def offset_calc(inputdirectory, outputdirectory, do_plot):
+def offset_calc(inputdirectory, outputdirectory):
     """ calculate mean offset & standard deviation for every capacitor and plot the data. the data is saved as .csv files.
         The .csv files are named offsets_channel<pixelindex>_<gaintype>-gain. 
         this FORMAT MUST NOT BE CHANGED
     """
 
-    for pixelindex in range(1):
+    for pixelindex in range(dragonboard.io.num_channels):
+
+        print(dragonboard.Event.data.fget)
 
         for gaintype in ["low", "high"]:
 
-            stats = RunningStats(shape=4096)
+            stats = RunningStats(shape=dragonboard.io.max_roi)
 
             for filename in glob.glob(os.path.join(inputdirectory, 'Ped*.dat')):
 
                 with open(filename, "rb") as f:
 
-                    max_events = 1000
-                    generator = EventGenerator(f, max_events=max_events) 
+                    generator = EventGenerator(f) 
                     
-                    print("reading file: %s, channel %s, %s gain" % (filename, pixelindex, gaintype))
+                    #print("reading file: %s, channel %s, %s gain" % (filename, pixelindex, gaintype))
 
-                    for event in tqdm(generator, total=max_events):
+                    for event in generator:
 
-                        data = np.full(4096, np.nan)
+                        data = np.full(dragonboard.io.max_roi, np.nan)
                         stop_cell = event.header.stop_cells[pixelindex]
                         roi = event.roi
                         data[:roi] = event.data[gaintype][pixelindex]
@@ -73,35 +74,14 @@ def offset_calc(inputdirectory, outputdirectory, do_plot):
 
                         stats.add(np.roll(data, stop_cell[stop_cell_array_pos]))
 
+
+
             np.savetxt(
                 '{}offsets_channel{}_{}-gain.csv'.format(outputdirectory, pixelindex, gaintype), 
                 np.column_stack([stats.mean, stats.std]),
                 delimiter=','
             )
 
-            if do_plot == True:
-
-                plt.title("offsets: channel %s, %s gain" %(pixelindex, gaintype))
-                plt.xlabel('time slice / DRS4 cell')
-                plt.ylabel('mean offset [ADC counts]')
-                plt.errorbar(
-                    np.arange(4096),
-                    stats.mean,
-                    yerr=stats.std,
-                    fmt="+",
-                    markersize=3,
-                    capsize=1,
-                )
-                plt.xlim(0,4096)
-                plt.figure()
-
-                plt.xlabel('time slice / DRS4 cell')
-                plt.ylabel('standard deviation [ADC counts]')
-                plt.axis([0,4096,0,40])
-                plt.title("standard deviation: channel %s, %s gain" %(pixelindex, gaintype))
-                plt.step(stats.std, "ro",label="standard deviation(Cap.No.)")
-                plt.legend()
-                plt.figure()
 
 
 
@@ -118,9 +98,6 @@ def scan_pedestalfile_amount(inputdirectory):
 
         sys.exit("Error: no files found to perform offset calculation")
 
-    else:
-
-        print("found %s files to perform calibration" %(amount_of_files))
 
 
 
@@ -129,10 +106,7 @@ if __name__ == '__main__':
     arguments = docopt(__doc__, version='Dragon Board Offset Calculation v.1.0')
     inputdirectory = arguments["<inputdirectory>"]
     outputdirectory = arguments["<outputdirectory>"]
-    do_plot = arguments["--p"]
 
     scan_pedestalfile_amount(inputdirectory)
 
-    offset_calc(inputdirectory, outputdirectory, do_plot)
-
-    plt.show()
+    offset_calc(inputdirectory, outputdirectory)
