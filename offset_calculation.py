@@ -33,64 +33,55 @@ from docopt import docopt
 import sys
 
 
-def offset_calc(inputdirectory, outputdirectory):
-    """ calculate mean offset & standard deviation for every capacitor and plot the data. the data is saved as .csv files.
-        The .csv files are named offsets_channel<pixelindex>_<gaintype>-gain. 
-        this FORMAT MUST NOT BE CHANGED
-    """
+def offset_calc(inputdirectory):
+    """ calculate mean offset for every capacitor. the data is saved as .csv files """
+
+    superstats = [np.nan] * (dragonboard.io.num_channels * dragonboard.io.num_gains)
+    iteration_counter = 0
 
     for pixelindex in range(dragonboard.io.num_channels):
 
-        print(dragonboard.Event.data.fget)
-
-        for gaintype in ["low", "high"]:
+        for gaintype in dragonboard.io.gaintypes:
 
             stats = RunningStats(shape=dragonboard.io.max_roi)
 
-            for filename in glob.glob(os.path.join(inputdirectory, 'Ped*.dat')):
+            for filename in glob.glob(os.path.join(inputdirectory, '*.dat')):
 
-                with open(filename, "rb") as f:
-
-                    generator = EventGenerator(f) 
+                with open(filename, "rb") as f:         
                     
-                    #print("reading file: %s, channel %s, %s gain" % (filename, pixelindex, gaintype))
+                    # print("reading file: %s, channel %s, %s gain" % (filename, pixelindex, gaintype))
 
-                    for event in generator:
+                    for event in tqdm(EventGenerator(f)):
 
                         data = np.full(dragonboard.io.max_roi, np.nan)
                         stop_cell = event.header.stop_cells[pixelindex]
-                        roi = event.roi
-                        data[:roi] = event.data[gaintype][pixelindex]
+                        data[:event.roi] = event.data[gaintype][pixelindex]
 
                         # assert correct stop cell. Assumed for the if-structure: stop cells are arranged in array 
                         # [(channel0_sc_low, channel0_sc_high), ..., (channel7_sc_low), channel7_sc_high)]. IS THAT APPROACH CORRECT?!
-                        if gaintype == "low":
+                        if gaintype == dragonboard.io.gaintypes[0]:
 
                             stop_cell_array_pos = 0
 
-                        else:
+                        if gaintype == dragonboard.io.gaintypes[1]:
 
                             stop_cell_array_pos = 1
 
                         stats.add(np.roll(data, stop_cell[stop_cell_array_pos]))
 
+            superstats[iteration_counter] = stats.mean
+            iteration_counter += 1
 
-
-            np.savetxt(
-                '{}offsets_channel{}_{}-gain.csv'.format(outputdirectory, pixelindex, gaintype), 
-                np.column_stack([stats.mean, stats.std]),
-                delimiter=','
-            )
-
+    return superstats
 
 
 
 def scan_pedestalfile_amount(inputdirectory):
-    """ assert Ped*.files to exist """
+    """ assert Pedestal files '*.dat' to exist """
 
     amount_of_files = 0
 
-    for filename in glob.glob(os.path.join(inputdirectory, 'Ped*.dat')):
+    for filename in glob.glob(os.path.join(inputdirectory, '*.dat')):
 
         amount_of_files += 1
 
@@ -100,13 +91,55 @@ def scan_pedestalfile_amount(inputdirectory):
 
 
 
+def store_data(outputdirectory, superstats):
+    """store acquired data to outputdirectory. data column structure: 0low, 0high, 1low, ..., 7high"""
+ 
+    # stackstring = ""
+    # for i in range(dragonboard.io.num_channels*dragonboard.io.num_gains):
+            
+    #     print(superstats[i])
+
+    #     if i == dragonboard.io.num_channels*dragonboard.io.num_gains-1:
+
+    #         stackstring = stackstring + "superstats[" + str(i) + "]"
+
+    #     else:
+
+    #         stackstring = stackstring + "superstats[" + str(i) + "], "
+
+    # print(stackstring)
+
+    np.savetxt(
+       'offsets.csv', 
+        np.column_stack([
+            superstats[0],
+            superstats[1],
+            superstats[2],
+            superstats[3],
+            superstats[4],
+            superstats[5],
+            superstats[6],
+            superstats[7],
+            superstats[8],
+            superstats[9],
+            superstats[10],
+            superstats[11],
+            superstats[12],
+            superstats[13],
+            superstats[14],
+            superstats[15]
+            ]),
+        delimiter=','
+    )
+
+
 
 if __name__ == '__main__':
 
-    arguments = docopt(__doc__, version='Dragon Board Offset Calculation v.1.0')
+    arguments = docopt(__doc__, version='Dragon Board Offset Calculation v.1.1')
     inputdirectory = arguments["<inputdirectory>"]
     outputdirectory = arguments["<outputdirectory>"]
 
     scan_pedestalfile_amount(inputdirectory)
 
-    offset_calc(inputdirectory, outputdirectory)
+    store_data(outputdirectory, offset_calc(inputdirectory))
