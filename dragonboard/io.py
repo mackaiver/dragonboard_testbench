@@ -16,6 +16,7 @@ EventHeader = namedtuple('EventHeader', [
 Event = namedtuple('Event', ['header', 'roi', 'data'])
 
 max_roi = 4096
+gaintypes = ["low", "high"]
 header_size_in_bytes = 32
 stop_cell_dtype = np.dtype('uint16').newbyteorder('>')
 stop_cell_size = 8 * stop_cell_dtype.itemsize
