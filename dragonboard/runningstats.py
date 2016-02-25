@@ -12,16 +12,11 @@ class RunningStats():
 
     def add(self, data):
         idx = ~np.isnan(data)
-        mask = (idx) & (self.n == 0)
-        self._mean[mask] = 0
-        self._delta[mask] = 0
-        self._M2[mask] = 0
-
+        self._mean[self.n == 0] = 0
         self.n[idx] += 1
         self._delta[idx] = data[idx] - self._mean[idx]
         self._mean[idx] = self._mean[idx] + self._delta[idx] / self.n[idx]
-        self._M2[idx] = self._M2[idx] + self._delta[idx] * (data[idx] - self._mean[idx])
-
+        self._M2 = self._M2[idx] + self._delta[idx] * (data[idx] - self._mean[idx])
 
     @property
     def mean(self):
