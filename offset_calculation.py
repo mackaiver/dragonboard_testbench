@@ -36,7 +36,7 @@ import sys
 def offset_calc(inputdirectory):
     """ calculate mean offset for every capacitor. the data is saved as .csv files """
 
-    superstats = [np.nan] * (dragonboard.io.num_channels * dragonboard.io.num_gains)
+    calibration_constants = [np.nan] * (dragonboard.io.num_channels * dragonboard.io.num_gains)
     iteration_counter = 0
 
     for pixelindex in range(dragonboard.io.num_channels):
@@ -69,10 +69,10 @@ def offset_calc(inputdirectory):
 
                         stats.add(np.roll(data, stop_cell[stop_cell_array_pos]))
 
-            superstats[iteration_counter] = stats.mean
+            calibration_constants[iteration_counter] = stats.mean
             iteration_counter += 1
 
-    return superstats
+    return calibration_constants
 
 
 
@@ -91,43 +91,28 @@ def scan_pedestalfile_amount(inputdirectory):
 
 
 
-def store_data(outputdirectory, superstats):
+def store_data(outputdirectory, calibration_constants):
     """store acquired data to outputdirectory. data column structure: 0low, 0high, 1low, ..., 7high"""
- 
-    # stackstring = ""
-    # for i in range(dragonboard.io.num_channels*dragonboard.io.num_gains):
-            
-    #     print(superstats[i])
-
-    #     if i == dragonboard.io.num_channels*dragonboard.io.num_gains-1:
-
-    #         stackstring = stackstring + "superstats[" + str(i) + "]"
-
-    #     else:
-
-    #         stackstring = stackstring + "superstats[" + str(i) + "], "
-
-    # print(stackstring)
 
     np.savetxt(
        'offsets.csv', 
         np.column_stack([
-            superstats[0],
-            superstats[1],
-            superstats[2],
-            superstats[3],
-            superstats[4],
-            superstats[5],
-            superstats[6],
-            superstats[7],
-            superstats[8],
-            superstats[9],
-            superstats[10],
-            superstats[11],
-            superstats[12],
-            superstats[13],
-            superstats[14],
-            superstats[15]
+            calibration_constants[0],
+            calibration_constants[1],
+            calibration_constants[2],
+            calibration_constants[3],
+            calibration_constants[4],
+            calibration_constants[5],
+            calibration_constants[6],
+            calibration_constants[7],
+            calibration_constants[8],
+            calibration_constants[9],
+            calibration_constants[10],
+            calibration_constants[11],
+            calibration_constants[12],
+            calibration_constants[13],
+            calibration_constants[14],
+            calibration_constants[15]
             ]),
         delimiter=','
     )
