@@ -36,28 +36,77 @@ import sys
 
 
 
-def apply_offset_calibration(raw_datafile_directory, ):
-    """ applies the offset calibration for a given raw_datafile_directory, pixelindex and gaintype. returns calibrated_data. """
+def apply_offset_calibration(raw_datafile_directory, calibration_constants_directory):
+    """ applies offset calibration for a given raw_datafile_directory. returns calibrated_data. """
 
    # print("calibrating file: %s, channel %s, %s gain" % (raw_datafile_directory, pixelindex, gaintype))    
 
-    with open(raw_datafile_directory, "rb") as f:
+    calibration_constants = read_calibration_constants(calibration_constants_directory)
+    calibrated_data = [ ]
 
-        for event in tqdm(EventGenerator(f)):
+    # plt.plot(calibration_constants[0])
+    # plt.figure()
 
-            data = np.full(dragonboard.io.max_roi, np.nan)
-            stop_cell = event.header.stop_cells[pixelindex]
-            data[:event.roi] = event.data[gaintype][pixelindex]
+    for filename in glob.glob(os.path.join(raw_datafile_directory, '*.dat')):
 
-        if gaintype == dragonboard.io.gaintypes[0]:
+        # calibrated_data = np.full(1024*16, np.nan)
 
-            stop_cell_array_pos = 0
+        #for pixelindex in range(dragonboard.io.num_channels):
+        for pixelindex in range(1):
 
-        if gaintype == dragonboard.io.gaintypes[1]:
+            print(pixelindex)
 
-            stop_cell_array_pos = 1
+            for gaintype in dragonboard.io.gaintypes:
 
-        calibrated_data = np.subtract(np.roll(data, stop_cell[stop_cell_array_pos]), calibration_constants)
+                print(gaintype)
+
+                with open(filename, "rb") as f:
+
+                    for event in tqdm(EventGenerator(f)):
+
+                        if gaintype == dragonboard.io.gaintypes[0]:
+                            calib_const_array_pos = pixelindex * dragonboard.io.num_gains
+                            stop_cell_array_pos = 0
+
+                        if gaintype == dragonboard.io.gaintypes[1]:
+                            calib_const_array_pos = pixelindex * dragonboard.io.num_gains +1
+                            stop_cell_array_pos = 1
+                        
+                        #data[stop_cell[stop_cell_array_pos]:stop_cell[stop_cell_array_pos]+event.roi] = event.data[gaintype][pixelindex]
+                        data = np.full(dragonboard.io.max_roi, np.nan)
+                        stop_cell = event.header.stop_cells[pixelindex]
+                        data[:event.roi] = event.data[gaintype][pixelindex]
+                        data = np.roll(data, stop_cell[stop_cell_array_pos])
+
+                        #const_roi = calibration_constants[calib_const_array_pos]
+
+                        #data = event.data[gaintype][pixelindex]
+                        #np.roll(data, stop_cell[stop_cell_array_pos])
+                        #calibrated_data.append(np.subtract(event.data[gaintype][pixelindex], const_roi))
+                        calibrated_data.append(np.subtract(data, calibration_constants[calib_const_array_pos]))
+                        #calibrated_data.append(np.subtract(data, calibration_constants[calib_const_array_pos]))
+                        # calibrated_data.append(
+                        #     np.subtract(np.roll(data, stop_cell[stop_cell_array_pos]), np.roll(calibration_constants[calib_const_array_pos],  stop_cell[stop_cell_array_pos]))
+                        #     )
+        for i in range(10):                        
+            plt.step(calibrated_data[i], ":")
+            plt.figure()
+        #                 data = np.full(dragonboard.io.max_roi, np.nan)
+        #                 stop_cell = event.header.stop_cells[pixelindex]
+        #                 data[:event.roi] = event.data[gaintype][pixelindex]
+
+        #             if gaintype == dragonboard.io.gaintypes[0]:
+
+        #                 stop_cell_array_pos = 0
+
+        #             if gaintype == dragonboard.io.gaintypes[1]:
+
+        #                 stop_cell_array_pos = 1
+
+        #             calibrated_data = np.subtract(np.roll(data, stop_cell[stop_cell_array_pos]), calibration_constants)
+
+        # return calibrated_data
+        #print(raw_data["high"][0])
 
     # # plot of raw data
     # plt.xlabel('time slice / DRS4 cell')
@@ -69,16 +118,16 @@ def apply_offset_calibration(raw_datafile_directory, ):
     # plt.figure()
 
     # plot of raw and calibrated data
-    plt.xlabel('time slice / DRS4 cell')
-    plt.ylabel('ADC counts')
-    plt.axis([60,180,-100,350]) # ([xmin, xmax, ymin, ymax]), before any figure() or show() command!
-    plt.title("%s, channel %s, %s gain" %(raw_datafile_directory, pixelindex, gaintype))
-    plt.step(np.roll(data, stop_cell[stop_cell_array_pos]), ":",label="raw data")
-    plt.step(calibrated_data, "r:",label="calibrated data")
-    plt.legend()    
+    # plt.xlabel('time slice / DRS4 cell')
+    # plt.ylabel('ADC counts')
+    # plt.axis([60,180,-100,350]) # ([xmin, xmax, ymin, ymax]), before any figure() or show() command!
+    # plt.title("%s, channel %s, %s gain" %(raw_datafile_directory, pixelindex, gaintype))
+    # plt.step(np.roll(data, stop_cell[stop_cell_array_pos]), ":",label="raw data")
+    # plt.step(calibrated_data, "r:",label="calibrated data")
+    # plt.legend()    
     #plt.figure()
 
-    return calibrated_data
+    
 
     # # plot calibrated data
     # plt.title("raw data: %s, channel %s, %s gain" %(raw_datafile_directory, pixelindex, gaintype))
@@ -125,15 +174,15 @@ def scan_datafile_amount(raw_datafile_directory):
 
 def is_calibration_constants_existent(calibration_constants_directory):
 
-    amount_of_files = 0
+    is_calib_file_existent = False
 
     for filename in glob.glob(os.path.join(calibration_constants_directory, '*.csv')):
 
         if filename == os.path.join(calibration_constants_directory, 'offsets.csv'):
     
-            amount_of_files += 1
+            is_calib_file_existent += True
 
-    if amount_of_files == 0:
+    if is_calib_file_existent == False:
 
         sys.exit("Error: no calibration constants found to perform offset calibration")
 
@@ -142,14 +191,26 @@ def is_calibration_constants_existent(calibration_constants_directory):
 def read_calibration_constants(calibration_constants_directory):
     """read calibration constants saved in offsets.csv. Data column structure: 0low, 0high, 1low, ..., 7high"""
 
-    calibration_constants = [np.nan] * (dragonboard.io.num_channels * dragonboard.io.num_gains)
+    calibration_constants = []
 
     for i in range(dragonboard.io.num_channels * dragonboard.io.num_gains):
 
-        calibration_constants[i] = np.loadtxt(
-            os.path.join(calibration_constants_directory, "offsets.csv"),
-            delimiter=",", usecols=(i), unpack=True
-    )
+        calibration_constants.append(
+            np.loadtxt(
+                os.path.join(
+                    calibration_constants_directory, "offsets.csv"),
+                    delimiter=",", usecols=([i]), unpack=True
+            )
+        )
+
+    #print(calibration_constants)
+    # for i in range(16):
+    #     print(len(calibration_constants[i]))
+    # print(len(calibration_constants))
+    # # for i in range(16):
+    #     plt.plot(calibration_constants[i], "+")
+    #     plt.figure()
+
 
     return calibration_constants
 
@@ -160,8 +221,8 @@ if __name__ == '__main__':
     calibration_constants_directory = arguments["<calibration_constants_directory>"]
     output_directory = arguments["<output_directory>"]
 
+    scan_datafile_amount(raw_datafile_directory)
     is_calibration_constants_existent(calibration_constants_directory)
-    print(read_calibration_constants(calibration_constants_directory))
-    #apply_calibration_constants_calibration(raw_datafile_directory, pixelindex, gaintype)
+    apply_offset_calibration(raw_datafile_directory, calibration_constants_directory)
 
     plt.show()
