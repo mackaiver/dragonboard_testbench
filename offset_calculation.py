@@ -36,8 +36,7 @@ import sys
 def offset_calc(inputdirectory):
     """ calculate mean offset for every capacitor. the data is saved as .csv files """
 
-    calibration_constants = [np.nan] * (dragonboard.io.num_channels * dragonboard.io.num_gains)
-    iteration_counter = 0
+    calibration_constants = []
 
     for pixelindex in range(dragonboard.io.num_channels):
 
@@ -53,24 +52,22 @@ def offset_calc(inputdirectory):
 
                     for event in tqdm(EventGenerator(f)):
 
+                        #print(event)
                         data = np.full(dragonboard.io.max_roi, np.nan)
                         stop_cell = event.header.stop_cells[pixelindex]
                         data[:event.roi] = event.data[gaintype][pixelindex]
 
-                        # assert correct stop cell. Assumed for the if-structure: stop cells are arranged in array 
-                        # [(channel0_sc_low, channel0_sc_high), ..., (channel7_sc_low), channel7_sc_high)]. IS THAT APPROACH CORRECT?!
+                        # # assert correct stop cell. Assumed for the if-structure: stop cells are arranged in array 
+                        # # [(channel0_sc_low, channel0_sc_high), ..., (channel7_sc_low), channel7_sc_high)]. IS THAT APPROACH CORRECT?!
                         if gaintype == dragonboard.io.gaintypes[0]:
-
                             stop_cell_array_pos = 0
 
                         if gaintype == dragonboard.io.gaintypes[1]:
-
                             stop_cell_array_pos = 1
 
-                        stats.add(np.roll(data, stop_cell[stop_cell_array_pos]))
+                        stats.add(np.roll(data, stop_cell[stop_cell_array_pos])) # STATS.ADD makes problems :-(
 
-            calibration_constants[iteration_counter] = stats.mean
-            iteration_counter += 1
+            calibration_constants.append(stats.mean)
 
     return calibration_constants
 
