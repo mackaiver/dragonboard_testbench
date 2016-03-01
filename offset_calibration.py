@@ -34,7 +34,6 @@ import glob
 import os
 from docopt import docopt
 import sys
-import csv
 
 
 def apply_offset_calibration(raw_datafile_directory, calibration_constants_directory):
@@ -46,8 +45,8 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
 
     for filename in glob.glob(os.path.join(raw_datafile_directory, '*.dat')):
 
-        for pixelindex in range(dragonboard.io.num_channels):
-        #for pixelindex in range(1):
+        #for pixelindex in range(dragonboard.io.num_channels):
+        for pixelindex in range(1):
 
             for gaintype in dragonboard.io.gaintypes:
 
@@ -134,9 +133,13 @@ def read_calibration_constants(calibration_constants_directory):
 def store_calibrated_data(output_directory, calib_data_with_head):
     """ store the calibrated data as .csv file. format: [event],[sourcefile, gaintype, pixelindex, stopcell] """
 
-    with open('calibrated_data.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',', quotechar=' ', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
-        writer.writerows(calib_data_with_head)
+    with open('calibrated_data.csv', 'w', newline='') as f:
+
+        for element in tqdm(calib_data_with_head):
+            entry=" , ".join(str(x) for x in element)
+            f.write(entry+"\n")
+
+    #print(calib_data_with_head[0])
 
 
 
@@ -154,6 +157,10 @@ if __name__ == '__main__':
 
 
 # Junk
+
+    # writer = csv.writer(csvfile, delimiter=',', quotechar=' ', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+    # writer.writerows(calib_data_with_head)
+
 
     #data = np.full(dragonboard.io.max_roi, np.nan)
     #data[:event.roi] = event.data[gaintype][pixelindex]
