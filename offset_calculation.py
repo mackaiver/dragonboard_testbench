@@ -1,8 +1,8 @@
 """
-##########################################################################
-*                     Dragon board readout software                      *
-* calculate offset constants and standard deviations from pedestal files *
-##########################################################################
+##################################################
+*          Dragon board readout software         *
+* calculate offset constants from pedestal files *
+##################################################
 
 annotations:
 
@@ -48,11 +48,8 @@ def offset_calc(inputdirectory):
 
                 with open(filename, "rb") as f:         
                     
-                    # print("reading file: %s, channel %s, %s gain" % (filename, pixelindex, gaintype))
-
                     for event in tqdm(EventGenerator(f)):
 
-                        #print(event)
                         data = np.full(dragonboard.io.max_roi, np.nan)
                         stop_cell = event.header.stop_cells[pixelindex]
                         data[:event.roi] = event.data[gaintype][pixelindex]
@@ -65,7 +62,7 @@ def offset_calc(inputdirectory):
                         if gaintype == dragonboard.io.gaintypes[1]:
                             stop_cell_array_pos = 1
 
-                        stats.add(np.roll(data, stop_cell[stop_cell_array_pos])) # STATS.ADD makes problems :-(
+                        stats.add(np.roll(data, stop_cell[stop_cell_array_pos])) # STATS.ADD causes problems :-(
 
             calibration_constants.append(stats.mean)
 
@@ -89,7 +86,7 @@ def scan_pedestalfile_amount(inputdirectory):
 
 
 def store_data(outputdirectory, calibration_constants):
-    """store acquired data to outputdirectory. data column structure: 0low, 0high, 1low, ..., 7high"""
+    """ store acquired data to outputdirectory. data column structure: 0low, 0high, 1low, ..., 7high """
 
     np.savetxt(
        'offsets.csv', 
