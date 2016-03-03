@@ -62,7 +62,7 @@ def offset_calc(inputdirectory):
                         if gaintype == dragonboard.io.gaintypes[1]:
                             stop_cell_array_pos = 1
 
-                        stats.add(np.roll(data, stop_cell[stop_cell_array_pos])) # STATS.ADD causes problems :-(
+                        stats.add(np.roll(data, stop_cell[stop_cell_array_pos]))
 
             calibration_constants.append(stats.mean)
 
@@ -89,7 +89,7 @@ def store_data(outputdirectory, calibration_constants):
     """ store acquired data to outputdirectory. data column structure: 0low, 0high, 1low, ..., 7high """
 
     np.savetxt(
-       'offsets.csv', 
+        outputdirectory + "offsets.csv", 
         np.column_stack([
             calibration_constants[0],
             calibration_constants[1],
