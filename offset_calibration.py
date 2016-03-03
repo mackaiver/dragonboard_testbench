@@ -1,7 +1,7 @@
 """
-#################################################
-* apply offset calibration for a given file.dat *
-#################################################
+###################################################
+* apply offset calibration for (a) given file.dat *
+###################################################
 
 this program uses calibration constants stored in .csv files
 
@@ -46,20 +46,19 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
     for filename in glob.glob(os.path.join(raw_datafile_directory, '*.dat')):
 
         for pixelindex in range(dragonboard.io.num_channels):
-        #for pixelindex in range(1):
 
             for gaintype in dragonboard.io.gaintypes:
 
                 with open(filename, "rb") as f:
 
-                    for event in tqdm(EventGenerator(f)):
+                    for event in EventGenerator(f):
 
                         if gaintype == dragonboard.io.gaintypes[0]:
                             calib_const_array_pos = pixelindex * dragonboard.io.num_gains
                             stop_cell_array_pos = 0
 
                         if gaintype == dragonboard.io.gaintypes[1]:
-                            calib_const_array_pos = pixelindex * dragonboard.io.num_gains +1
+                            calib_const_array_pos = pixelindex * dragonboard.io.num_gains + 1
                             stop_cell_array_pos = 1
                         
                         stop_cell = event.header.stop_cells[pixelindex]
@@ -69,11 +68,6 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
                         event_header.append([filename[len(raw_datafile_directory):], gaintype, pixelindex, stop_cell[stop_cell_array_pos]])
 
     calib_data_with_head = list(zip(calibrated_data, event_header))
-    
-    # for i in range(10):
-    #     #print(calib_data_with_head[i*200]) 
-    #     plt.step(calibrated_data[i*50], ":")
-    #     plt.figure()
 
     return calib_data_with_head
 
@@ -131,7 +125,7 @@ def read_calibration_constants(calibration_constants_directory):
 
 
 def store_calibrated_data(output_directory, calib_data_with_head):
-    """ store the calibrated data as .csv file. format: [event],[sourcefile, gaintype, pixelindex, stopcell] """
+    """ store calibrated data as .csv file. format: [event],[sourcefile, gaintype, pixelindex, stopcell] """
 
     with open('calibrated_data.csv', 'w', newline='') as f:
 
@@ -139,79 +133,14 @@ def store_calibrated_data(output_directory, calib_data_with_head):
             entry=" , ".join(str(x) for x in element)
             f.write(entry+"\n")
 
-    #print(calib_data_with_head[0])
-
 
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='1.0')
+    arguments = docopt(__doc__, version = '1.0')
     raw_datafile_directory = arguments["<raw_datafile_directory>"]
     calibration_constants_directory = arguments["<calibration_constants_directory>"]
     output_directory = arguments["<output_directory>"]
 
     scan_datafile_amount(raw_datafile_directory)
     is_calibration_constants_existent(calibration_constants_directory)
-    store_calibrated_data(output_directory, apply_offset_calibration(raw_datafile_directory, calibration_constants_directory)) 
-
-    plt.show()
-
-
-# Junk
-
-    # writer = csv.writer(csvfile, delimiter=',', quotechar=' ', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
-    # writer.writerows(calib_data_with_head)
-
-
-    #data = np.full(dragonboard.io.max_roi, np.nan)
-    #data[:event.roi] = event.data[gaintype][pixelindex]
-    #data = np.roll(data, stop_cell[stop_cell_array_pos])
-    #calibrated_data.append(np.subtract(data, calibration_constants[calib_const_array_pos]))
-                        
-   # print("calibrating file: %s, channel %s, %s gain" % (raw_datafile_directory, pixelindex, gaintype))    
-
-    # # plot of raw data
-    # plt.xlabel('time slice / DRS4 cell')
-    # plt.ylabel('ADC counts')
-    # plt.axis([60,180,-100,350]) # ([xmin, xmax, ymin, ymax]), before any figure() or show() command!
-    # plt.title("%s, channel %s, %s gain" %(raw_datafile_directory, pixelindex, gaintype))
-    # plt.step(np.roll(data, stop_cell[stop_cell_array_pos]), ":",label="raw data")
-    # plt.legend()
-    # plt.figure()
-
-    # plot of raw and calibrated data
-    # plt.xlabel('time slice / DRS4 cell')
-    # plt.ylabel('ADC counts')
-    # plt.axis([60,180,-100,350]) # ([xmin, xmax, ymin, ymax]), before any figure() or show() command!
-    # plt.title("%s, channel %s, %s gain" %(raw_datafile_directory, pixelindex, gaintype))
-    # plt.step(np.roll(data, stop_cell[stop_cell_array_pos]), ":",label="raw data")
-    # plt.step(calibrated_data, "r:",label="calibrated data")
-    # plt.legend()    
-    #plt.figure()
-
-    
-
-    # # plot calibrated data
-    # plt.title("raw data: %s, channel %s, %s gain" %(raw_datafile_directory, pixelindex, gaintype))
-    # plt.errorbar(
-    #     np.arange(4096),
-    #     np.roll(data, stop_cell[stop_cell_array_pos]),
-    #     yerr=std, # yerr = y-error bars
-    #     fmt="o:", # fmt means format
-    #     markersize=3,
-    #     capsize=1, # frame bars of error bars
-    # )
-    # #plt.axis([60,180,-100,350]) # ([xmin, xmax, ymin, ymax]), before any figure() or show() command!
-    # plt.figure()
-    
-
-    # # plot calibrated data
-    # plt.title("calibrated data: %s, channel %s, %s gain" %(raw_datafile_directory, pixelindex, gaintype))
-    # plt.errorbar(
-    #     np.arange(4096),
-    #     calibrated_data,
-    #     yerr=std, # yerr = y-error bars
-    #     fmt="ro:", # fmt means format
-    #     markersize=3,
-    #     capsize=1, # frame bars of error bars
-    # )
-    # #plt.axis([60,180,-100,350])
+    store_calibrated_data(output_directory, apply_offset_calibration(raw_datafile_directory, calibration_constants_directory))
