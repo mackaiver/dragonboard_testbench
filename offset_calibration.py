@@ -125,13 +125,30 @@ def read_calibration_constants(calibration_constants_directory):
 
 
 def store_calibrated_data(output_directory, calib_data_with_head):
-    """ store calibrated data as .csv file. format: [event],[sourcefile, gaintype, pixelindex, stopcell] """
+    """ slice and store calibrated data as .csv files. format: [event],[sourcefile, gaintype, pixelindex, stopcell] """
 
-    with open('calibrated_data.csv', 'w', newline='') as f:
+    slicearray = []
+    slicearray.append(0)
+    itcounter = -1
 
-        for element in tqdm(calib_data_with_head):
-            entry=" , ".join(str(x) for x in element)
-            f.write(entry+"\n")
+    for i in calib_data_with_head[:len(calib_data_with_head)-1]:
+
+        itcounter += 1
+
+        if calib_data_with_head[itcounter][1][0] != calib_data_with_head[itcounter+1][1][0]:
+
+            slicearray.append(itcounter+1)
+
+    slicearray.append(len(calib_data_with_head))
+
+    for i in range(len(slicearray)-1):
+
+        with open(calib_data_with_head[slicearray[i]+1][1][0].rpartition('.')[0] + '_calib.csv', 'w', newline='') as f:
+
+            for element in tqdm(calib_data_with_head[slicearray[i]:slicearray[i+1]]):
+
+                entry=" , ".join(str(x) for x in element)
+                f.write(entry+"\n")
 
 
 
