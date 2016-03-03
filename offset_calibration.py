@@ -45,8 +45,8 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
 
     for filename in glob.glob(os.path.join(raw_datafile_directory, '*.dat')):
 
-        #for pixelindex in range(dragonboard.io.num_channels):
-        for pixelindex in range(1):
+        for pixelindex in range(dragonboard.io.num_channels):
+        #for pixelindex in range(1):
 
             for gaintype in dragonboard.io.gaintypes:
 
@@ -72,7 +72,7 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
     
     # for i in range(10):
     #     #print(calib_data_with_head[i*200]) 
-    #     plt.step(calibrated_data[i*200], ":")
+    #     plt.step(calibrated_data[i*50], ":")
     #     plt.figure()
 
     return calib_data_with_head
