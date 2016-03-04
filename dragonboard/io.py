@@ -8,7 +8,9 @@ from collections import namedtuple
 EventHeader = namedtuple('EventHeader', [
     'event_counter',
     'trigger_counter',
-    'timestamp',
+    'counter_133MHz',
+    'counter_10MHz',
+    'pps_counter',
     'stop_cells',
     'flag',
 ])
@@ -17,49 +19,51 @@ Event = namedtuple('Event', ['header', 'roi', 'data'])
 
 max_roi = 4096
 gaintypes = ["low", "high"]
-header_size_in_bytes = 32
 stop_cell_dtype = np.dtype('uint16').newbyteorder('>')
 stop_cell_size = 8 * stop_cell_dtype.itemsize
 expected_relative_address_of_flag = 16
 timestamp_conversion_to_s = 7.5e-9
 num_channels = 8
 num_gains = 2
-
+adc_word_size = 2
 
 def get_event_size(roi):
     ''' return event_size in bytes, based on roi in samples.
     '''
-    return 16 * (2 * roi + 3)
+    header_size = 4 * 16
+    body_size = roi * adc_word_size * num_gains * num_channels 
+    return header_size + body_size
 
 
 def get_roi(event_size):
     ''' return roi in samples, based on event_size in bytes.
     '''
-
-    roi = ((event_size / 16) - 3) / 2
+    header_size = 4 * 16
+    body_size = event_size - header_size
+    roi = body_size/(adc_word_size * num_gains * num_channels)
     assert roi.is_integer()
     return int(roi)
 
 
-def read_header(f, flag=None):
+def read_header(f):
     ''' return EventHeader from file f
-
-    if a *flag* is provided, we can check if the header
-    looks correct. If not, we can't check anything.
     '''
-    chunk = f.read(header_size_in_bytes)
-    # the format string:
-    #   ! -> network endian order
-    #   I -> integer
-    #   Q -> unsingned long
-    #   s -> char
-    #   H -> unsigned short
     (
-        event_id,
-        trigger_id,
-        clock,
-        found_flag,
-    ) = struct.unpack('!IIQ16s', chunk)
+        header_aaaa, # should be constant 0xaaaa
+        pps_counter, # pps: pulse per second = 1Hz
+        counter_10MHz,
+        event_counter,
+        trigger_counter,
+        counter_133MHz,
+        data_header_all_ds, # should be constant 8 times 0xdd
+        flags,
+    ) = struct.unpack('!HHIIIQQ16s', f.read(struct.calcsize('!HHIIIQQ16s')))
+
+    assert header_aaaa == 0xaaaa, \
+        "Header is not 0xaaaa but {!r}".format(header_aaaa)
+    assert data_header_all_ds == 0xdddddddddddddddd, \
+        "data_header is not 8x 0xdd but {!r}".format(data_header_all_ds)
+
     stop_cells_for_user = np.empty(
         num_channels, dtype=[('low', 'i2'), ('high', 'i2')]
     )
@@ -90,17 +94,14 @@ def read_header(f, flag=None):
     stop_cells_for_user["low"][6] = stop_cells__in_drs4_chip_order[7]
     stop_cells_for_user["low"][7] = stop_cells__in_drs4_chip_order[7]
 
-    timestamp_in_s = clock * timestamp_conversion_to_s
-
-    if flag is not None:
-        msg = ('event header looks wrong: '
-               'flag is not at the right position\n'
-               'found: {}, expected: {}'.format(found_flag, flag))
-
-        assert chunk.find(flag) == expected_relative_address_of_flag, msg
-
     return EventHeader(
-        event_id, trigger_id, timestamp_in_s, stop_cells_for_user, found_flag
+        event_counter, 
+        trigger_counter, 
+        counter_133MHz, 
+        counter_10MHz, 
+        pps_counter,
+        stop_cells_for_user,
+        flags
     )
 
 
@@ -142,21 +143,9 @@ def guess_event_size(f):
     max_event_size = get_event_size(roi=max_roi)
     # I don't believe myself, so I add 50% here
     chunk_size = int(max_event_size * 1.5)
-
     chunk = f.read(chunk_size)
 
-    # the flag should be found two times in the chunk:
-    #  1.) in the very first 48 bytes as part of the first event header
-    #  2.) somewhere later, as part of the second header.
-    # the distance is simply the event size:
-    #
-    # Note! At first i though the flag is always this: flag = b'\xf0\x02' * 8
-    # But then I found files, where this is not true,
-    # Now I make another assumption about the flag.
-    # I assume: The flag is the the bytestring from address 16 to 32 of the
-    # file:
-
-    flag = chunk[16:32]
+    flag = b'\xdd'*8
     first_flag = chunk.find(flag)
     second_flag = chunk.find(flag, first_flag + 1)
 
