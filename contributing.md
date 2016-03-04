@@ -9,7 +9,7 @@ In case you find it, please put a link here and delety this wordy mess of mine.
 
 In you find something missing, 
 be it a feature, documentation or test, 
-please open a (new issue)[https://github.com/cta-observatory/dragonboard_testbench/issues]
+please open a [new issue](https://github.com/cta-observatory/dragonboard_testbench/issues)
 
 ## 2. Assign yourself
 
