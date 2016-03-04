@@ -134,8 +134,8 @@ def read_data(f, roi):
 def guess_event_size(f):
     ''' try to find out the event size for this file.
 
-    Each even header contains a flag.
-    The distance between two flags is just the event size.
+    Each even header contains a data_header
+    The distance between two data_headers is just the event size.
     '''
     current_position = f.tell()
     f.seek(0)
@@ -145,11 +145,11 @@ def guess_event_size(f):
     chunk_size = int(max_event_size * 1.5)
     chunk = f.read(chunk_size)
 
-    flag = b'\xdd'*8
-    first_flag = chunk.find(flag)
-    second_flag = chunk.find(flag, first_flag + 1)
+    data_header = b'\xdd'*8
+    first_data_header = chunk.find(data_header)
+    second_data_header = chunk.find(data_header, first_data_header + 1)
 
-    event_size = second_flag - first_flag
+    event_size = second_data_header - first_data_header
     f.seek(current_position)
 
     return event_size
