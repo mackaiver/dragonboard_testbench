@@ -35,6 +35,6 @@ This is an act of tidying up and usually feels good.
 
 ## 5. Done
 
-Check out the master as use it... until you find the next problem.
+Check out the master and use it ... until you find the next problem.
 
 The goal is to have no open issues and no living feature branches... on average
