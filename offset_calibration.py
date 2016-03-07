@@ -143,7 +143,7 @@ def store_calibrated_data(output_directory, calib_data_with_head):
 
     for i in range(len(slicearray)-1):
 
-        with open(calib_data_with_head[slicearray[i]+1][1][0].rpartition('.')[0] + '_calib.csv', 'w', newline='') as f:
+        with open(output_directory + calib_data_with_head[slicearray[i]+1][1][0].rpartition('.')[0] + '_calib.csv', 'w', newline='') as f:
 
             for element in tqdm(calib_data_with_head[slicearray[i]:slicearray[i+1]]):
 
