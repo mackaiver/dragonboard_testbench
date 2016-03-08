@@ -51,7 +51,7 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
 
                 with open(filename, "rb") as f:
 
-                    for event in EventGenerator(f):
+                    for event in tqdm(EventGenerator(f)):
 
                         if gaintype == dragonboard.io.gaintypes[0]:
                             calib_const_array_pos = pixelindex * dragonboard.io.num_gains
@@ -64,10 +64,39 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
                         stop_cell = event.header.stop_cells[pixelindex]
                         const_roi = calibration_constants[calib_const_array_pos][stop_cell[stop_cell_array_pos]:stop_cell[stop_cell_array_pos]+event.roi]
 
-                        calibrated_data.append(np.subtract(event.data[gaintype][pixelindex], const_roi))
-                        event_header.append([filename[len(raw_datafile_directory):], gaintype, pixelindex, stop_cell[stop_cell_array_pos]])
+                        if isinstance(event,list) == True:
+
+                            for i in range(len(event)):
+
+                                print(event.data[gaintype][pixelindex][i])
+
+                                try:
+
+                                    calibrated_data.append(np.subtract(event.data[gaintype][pixelindex][i], const_roi))
+                                    event_header.append([filename[len(raw_datafile_directory):], gaintype, pixelindex, stop_cell[stop_cell_array_pos]])
+
+                                except Exception:
+                                    pass
+
+                        else:
+
+                            try:
+
+                                calibrated_data.append(np.subtract(event.data[gaintype][pixelindex], const_roi))
+                                event_header.append([filename[len(raw_datafile_directory):], gaintype, pixelindex, stop_cell[stop_cell_array_pos]])
+
+                            except Exception:
+                                pass                        
+                        
+    if len(calibrated_data) == 0:
+        sys.exit("Error: could not calibrate data")
 
     calib_data_with_head = list(zip(calibrated_data, event_header))
+
+    # for i in range(4):
+    #     plt.step(calibrated_data[i], ":")
+    #     plt.figure()
+    #     # print(calibrated_data)    
 
     return calib_data_with_head
 
@@ -161,3 +190,6 @@ if __name__ == '__main__':
     scan_datafile_amount(raw_datafile_directory)
     is_calibration_constants_existent(calibration_constants_directory)
     store_calibrated_data(output_directory, apply_offset_calibration(raw_datafile_directory, calibration_constants_directory))
+
+    # apply_offset_calibration(raw_datafile_directory, calibration_constants_directory)
+    # plt.show()
