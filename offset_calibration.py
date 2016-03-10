@@ -88,12 +88,19 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
 
                                 pass                        
                         
-    if len(calibrated_data) == 0:
-        sys.exit("Error: could not calibrate data")
+    check_calibrated_data_length(calibrated_data)
 
     calib_data_with_head = list(zip(calibrated_data, event_header))
 
     return calib_data_with_head
+
+
+
+def check_calibrated_data_length(calibrated_data):
+
+    if len(calibrated_data) == 0:
+        
+        sys.exit("Error: could not calibrate data")
 
 
 
