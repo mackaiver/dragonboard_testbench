@@ -1,4 +1,5 @@
-# lst_calibration
+# dragonboard_testbench
+
 A collection of programs to help with drs calibration of the LST test data of the dragon_cam.
 
 
