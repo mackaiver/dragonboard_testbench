@@ -62,14 +62,45 @@ def apply_offset_calibration(raw_datafile_directory, calibration_constants_direc
                             stop_cell_array_pos = 1
                         
                         stop_cell = event.header.stop_cells[pixelindex]
-                        const_roi = calibration_constants[calib_const_array_pos][stop_cell[stop_cell_array_pos]:stop_cell[stop_cell_array_pos]+event.roi]
+                        const_roi = calibration_constants[calib_const_array_pos][stop_cell[stop_cell_array_pos]:stop_cell[stop_cell_array_pos] + event.roi]
 
-                        calibrated_data.append(np.subtract(event.data[gaintype][pixelindex], const_roi))
-                        event_header.append([filename[len(raw_datafile_directory):], gaintype, pixelindex, stop_cell[stop_cell_array_pos]])
+                        if isinstance(event,list) == True:
+
+                            for i in range(len(event)):
+
+                                try:
+
+                                    calibrated_data.append(np.subtract(event.data[gaintype][pixelindex][i], const_roi))
+                                    event_header.append([filename[len(raw_datafile_directory):], gaintype, pixelindex, stop_cell[stop_cell_array_pos]])
+
+                                except Exception:
+
+                                    pass
+
+                        else:
+
+                            try:
+
+                                calibrated_data.append(np.subtract(event.data[gaintype][pixelindex], const_roi))
+                                event_header.append([filename[len(raw_datafile_directory):], gaintype, pixelindex, stop_cell[stop_cell_array_pos]])
+
+                            except Exception:
+
+                                pass                        
+                        
+    check_calibrated_data_length(calibrated_data)
 
     calib_data_with_head = list(zip(calibrated_data, event_header))
 
     return calib_data_with_head
+
+
+
+def check_calibrated_data_length(calibrated_data):
+
+    if len(calibrated_data) == 0:
+        
+        sys.exit("Error: could not calibrate data")
 
 
 
@@ -125,18 +156,35 @@ def read_calibration_constants(calibration_constants_directory):
 
 
 def store_calibrated_data(output_directory, calib_data_with_head):
-    """ store calibrated data as .csv file. format: [event],[sourcefile, gaintype, pixelindex, stopcell] """
+    """ slice and store calibrated data as .csv files. format: [event],[sourcefile, gaintype, pixelindex, stopcell] """
 
-    with open('calibrated_data.csv', 'w', newline='') as f:
+    slicearray = []
+    slicearray.append(0)
+    itcounter = -1
 
-        for element in tqdm(calib_data_with_head):
-            entry=" , ".join(str(x) for x in element)
-            f.write(entry+"\n")
+    for i in calib_data_with_head[:len(calib_data_with_head)-1]:
+
+        itcounter += 1
+
+        if calib_data_with_head[itcounter][1][0] != calib_data_with_head[itcounter+1][1][0]:
+
+            slicearray.append(itcounter+1)
+
+    slicearray.append(len(calib_data_with_head))
+
+    for i in range(len(slicearray)-1):
+
+        with open(output_directory + calib_data_with_head[slicearray[i]+1][1][0].rpartition('.')[0] + '_calib.csv', 'w', newline='') as f:
+
+            for element in tqdm(calib_data_with_head[slicearray[i]:slicearray[i+1]]):
+
+                entry=" , ".join(str(x) for x in element)
+                f.write(entry+"\n")
 
 
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version = '1.0')
+    arguments = docopt(__doc__, version = '1.1')
     raw_datafile_directory = arguments["<raw_datafile_directory>"]
     calibration_constants_directory = arguments["<calibration_constants_directory>"]
     output_directory = arguments["<output_directory>"]
