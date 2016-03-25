@@ -20,8 +20,8 @@ class RunningStats():
         self._n[idx] += 1
 
         delta = data[idx] - self._mean[idx]
-        self._mean[idx] = self._mean[idx] + delta / self._n[idx]
-        self._M2[idx] = self._M2[idx] + delta * (data[idx] - self._mean[idx])
+        self._mean[idx] += delta / self._n[idx]
+        self._M2[idx] += delta * (data[idx] - self._mean[idx])
 
     @property
     def n(self):
