@@ -1,4 +1,5 @@
 # dragonboard_testbench
+[![Build Status](https://travis-ci.org/cta-observatory/dragonboard_testbench.svg?branch=master)](https://travis-ci.org/cta-observatory/dragonboard_testbench)
 
 A collection of programs to help with drs calibration of the LST test data of the dragon_cam.
 
