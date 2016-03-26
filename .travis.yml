@@ -18,6 +18,7 @@ before_install:
 # Install packages
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib pytest pip
+  - pip install .
  
 # Run test
 script:
