@@ -7,17 +7,17 @@
 annotations:
 
 - inputdirectory is the path to the directory of your pedestal files
-- outputpath is the file path where the calibration constants are written to
 
 
 Usage:
-  offset_calculation.py <inputdirectory> <outputpath>
+  offset_calculation.py <inputdirectory> [options]
   offset_calculation.py (-h | --help)
   offset_calculation.py --version
 
 Options:
   -h --help     Show this screen.
   --version     Show version.
+  --outpath N   Outputfile path [default: calibration_constants.pickle]
 
 """
 
@@ -44,9 +44,8 @@ def offset_calc(inputdirectory):
     glob_expression = os.path.join(inputdirectory, '*.dat')
     for filename in sorted(glob.glob(glob_expression)):
         try:
-            f = open(filename, "rb")
             for event in tqdm(
-                    iterable=EventGenerator(f),
+                    iterable=EventGenerator(filename),
                     desc=os.path.basename(filename),
                     leave=True,
                     unit="events"):
@@ -72,4 +71,4 @@ if __name__ == '__main__':
         sys.exit("Error: no files found to perform offset calculation")
 
     calibration_constants = offset_calc(arguments["<inputdirectory>"])
-    pickle.dump(calibration_constants, open(arguments["<outputpath>"], 'wb'))
+    pickle.dump(calibration_constants, open(arguments["--outpath"], 'wb'))
