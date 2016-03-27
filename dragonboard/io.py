@@ -109,20 +109,20 @@ class AbstractEventGenerator(object):
 
     def next(self):
         try:
-            event_header = self.read_header(self.file_descriptor)
-            data = read_data(self.file_descriptor, self.roi)
+            event_header = self.read_header()
+            data = self.read_data()
 
             if self.max_events is not None:
                 if event_header.event_counter > self.max_events:
                     raise StopIteration
 
-            return Event(event_header, roi, data)
+            return Event(event_header, self.roi, data)
 
         except struct.error:
             raise StopIteration
 
 
-    def read_data(f, roi):
+    def read_data(self):
         ''' return array of raw ADC data, shape:(16, roi)
 
         The ADC data, is just a contiguous bunch of 16bit integers
@@ -172,6 +172,7 @@ class EventGenerator_v5_1_05(AbstractEventGenerator):
         #   Q -> unsingned long
         #   s -> char
         #   H -> unsigned short
+        f = self.file_descriptor
         (
             event_id,
             trigger_id,
@@ -254,6 +255,7 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
     def read_header(self):
         ''' return EventHeader from file f
         '''
+        f = self.file_descriptor
         (
             header_aaaa, # should be constant 0xaaaa
             pps_counter, # pps: pulse per second = 1Hz
