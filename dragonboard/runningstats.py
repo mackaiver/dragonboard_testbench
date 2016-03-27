@@ -5,18 +5,27 @@ import numpy as np
 class RunningStats():
     def __init__(self, shape=1):
         self.shape = shape
-        self.n = np.zeros(shape)
+        self._n = np.zeros(shape, dtype=int)
         self._mean = np.full(shape, np.nan)
-        self._delta = np.full(shape, np.nan)
         self._M2 = np.full(shape, np.nan)
 
     def add(self, data):
-        idx = ~np.isnan(data)
-        self._mean[self.n == 0] = 0
-        self.n[idx] += 1
-        self._delta[idx] = data[idx] - self._mean[idx]
-        self._mean[idx] = self._mean[idx] + self._delta[idx] / self.n[idx]
-        self._M2[idx] = self._M2[idx] + self._delta[idx] * (data[idx] - self._mean[idx])
+        data = np.array(data, copy=False)
+
+        idx = np.logical_not(np.isnan(data))
+        uninitialised = np.logical_and(idx, self._n == 0)
+
+        self._mean[uninitialised] = 0
+        self._M2[uninitialised] = 0
+        self._n[idx] += 1
+
+        delta = data[idx] - self._mean[idx]
+        self._mean[idx] += delta / self._n[idx]
+        self._M2[idx] += delta * (data[idx] - self._mean[idx])
+
+    @property
+    def n(self):
+        return self._n
 
     @property
     def mean(self):
