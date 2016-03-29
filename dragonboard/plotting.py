@@ -43,25 +43,16 @@ class DragonBrowser(QtGui.QMainWindow):
 
         self.setWindowTitle('DragonBrowser')
 
-        self.file = None
-        self.open_new_file(filename)
-        if not self.file:
+        self.filename = filename or QtGui.QFileDialog.getOpenFileName(
+                self, 'Open file', os.environ['HOME']
+            )
+        if not self.filename:
             sys.exit()
-        self.generator = EventGenerator(self.file)
+        self.generator = EventGenerator(self.filename)
         self.dragon_event = next(self.generator)
         self.gains = self.dragon_event.data.dtype.names
         self.n_channels = self.dragon_event.data.shape[0]
         self.init_gui()
-
-    def open_new_file(self, filename=None):
-        if not filename:
-            filename = QtGui.QFileDialog.getOpenFileName(
-                self, 'Open file', os.environ['HOME']
-            )
-        if filename:
-            if self.file:
-                self.file.close()
-            self.file = open(filename, 'rb')
 
     def init_gui(self):
         self.canvas = FigureCanvas(self, 12.8, 7.2)
@@ -209,6 +200,5 @@ class DragonBrowser(QtGui.QMainWindow):
             self.update()
 
     def closeEvent(self, event):
-        self.file.close()
         event.accept()
         QtCore.QCoreApplication.instance().quit()
