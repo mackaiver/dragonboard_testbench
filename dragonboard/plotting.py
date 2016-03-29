@@ -43,7 +43,7 @@ class DragonBrowser(QtGui.QMainWindow):
 
         self.setWindowTitle('DragonBrowser')
 
-        self.filename = QtGui.QFileDialog.getOpenFileName(
+        self.filename = filename or QtGui.QFileDialog.getOpenFileName(
                 self, 'Open file', os.environ['HOME']
             )
         if not self.filename:
@@ -200,6 +200,5 @@ class DragonBrowser(QtGui.QMainWindow):
             self.update()
 
     def closeEvent(self, event):
-        self.file.close()
         event.accept()
         QtCore.QCoreApplication.instance().quit()
