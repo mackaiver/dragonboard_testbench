@@ -3,9 +3,9 @@ from .plotting import DragonBrowser
 from .runningstats import RunningStats
 
 __all__ = [
-	'read', 
-    'event_generator',
-    'Event', 
+    'read',
+    'EventGenerator',
+    'Event',
     'DragonBrowser',
     'RunningStats',
 ]
