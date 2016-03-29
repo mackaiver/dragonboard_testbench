@@ -40,8 +40,7 @@ adc_word_size = 2
 
 def read(path, max_events=None):
     ''' return list of Events in file path '''
-    with open(path, 'rb') as f:
-        return list(EventGenerator(f, max_events=None))
+    return list(EventGenerator(path, max_events=None))
 
 class AbstractEventGenerator(object):
     header_size = None
