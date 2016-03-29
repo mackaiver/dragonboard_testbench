@@ -337,3 +337,4 @@ def guess_version(path):
             return version_name
         except:
             pass
+    raise IOError('File version could not be determined for file {}'.format(path))
