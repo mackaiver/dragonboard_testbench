@@ -11,7 +11,8 @@ setup(
     packages=['dragonboard'],
     entry_points={
         'gui_scripts': [
-            'dragonviewer = dragonboard.__main__:main'
+            'dragonviewer = dragonboard.__main__:main',
+            'dragonboard_fakedata = dragonboard.tools.create_fake_data:main',
         ]
     }
 )
