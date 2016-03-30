@@ -129,15 +129,12 @@ class AbstractEventGenerator(object):
         if self.event_counter >= self.max_events:
             raise StopIteration
 
-        try:
-            event_header = self.read_header()
-            data = self.read_adc_data()
+        event_header = self.read_header()
+        data = self.read_adc_data()
 
-            self.event_counter += 1
-            return Event(event_header, self.roi, data)
+        self.event_counter += 1
+        return Event(event_header, self.roi, data)
 
-        except struct.error:
-            raise StopIteration
 
     def read_adc_data(self):
         ''' return array of raw ADC data, shape:(16, roi)
