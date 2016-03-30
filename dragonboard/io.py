@@ -5,6 +5,7 @@ import struct
 import numpy as np
 from collections import namedtuple
 import os.path
+import warnings
 
 stop_cell_map = {
     ("high", 0): 0,
@@ -48,13 +49,18 @@ class AbstractEventGenerator(object):
 
     def __init__(self, path, max_events=None):
         self.path = os.path.realpath(path)
-        self.max_events = max_events
 
         self.file_descriptor = open(self.path, "rb")
 
         self.event_size = self.guess_event_size()
         self.roi = self.calc_roi()
         self.num_events = self.calc_num_events()
+        if max_events is None or max_events > len(self):
+            self.max_events = len(self)
+        else:
+            self.max_events = max_events
+
+        self.event_counter = 0
 
     def __repr__(self):
         return(
@@ -63,10 +69,11 @@ class AbstractEventGenerator(object):
             "max_events={S.max_events})\n"
             "roi ......: {S.roi}\n"
             "event_size: {S.event_size} byte\n"
-            "#events ..: {S._length}"
+            "#events ..: {N}"
         ).format(
             name=self.__class__.__name__,
-            S=self
+            S=self,
+            N=len(self),
         )
 
     def calc_num_events(self):
@@ -75,7 +82,18 @@ class AbstractEventGenerator(object):
         f.seek(0)
         filesize = f.seek(0, 2)
         f.seek(current_position)
-        return filesize // self.event_size
+        num_events = filesize / self.event_size
+        if not num_events.is_integer():
+            warnings.warn(("\n"
+                "File:\n"
+                "{0}\n"
+                "might be broken.\n"
+                "Number of events "
+                "is not integer but {1:.2f}.").format(
+                    self.path,
+                    num_events
+                ))
+        return int(num_events)
 
     def __len__(self):
         return self.num_events
@@ -102,19 +120,20 @@ class AbstractEventGenerator(object):
     def previous(self):
         try:
             self.file_descriptor.seek(- 2 * self.event_size, 1)
+            self.event_counter -= 2
         except OSError:
             raise ValueError('Already at first event')
         return self.next()
 
     def next(self):
+        if self.event_counter >= self.max_events:
+            raise StopIteration
+
         try:
             event_header = self.read_header()
             data = self.read_adc_data()
 
-            if self.max_events is not None:
-                if event_header.event_counter > self.max_events:
-                    raise StopIteration
-
+            self.event_counter += 1
             return Event(event_header, self.roi, data)
 
         except struct.error:
