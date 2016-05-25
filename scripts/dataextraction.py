@@ -10,7 +10,7 @@ Options:
   --outpath N   Outputfile path [default: data.hdf5]
   -c --calib P  Path to calibration file
   -e --extra P  Path to extra offset file
-
+  --memory M    fraction of computer mem to use in percent [default: 20]
 Save (cell, sample, time_since_last_readout, adc_counts) to an hdf5 file
 for all given inputfiles.
 inputfiles: raw_data.dat
@@ -27,6 +27,8 @@ from dragonboard.calibration import TimelapseCalibration
 from dragonboard.calibration import TimelapseCalibrationExtraOffsets
 from dragonboard.calibration import MedianTimelapseExtraOffsets
 
+import psutil
+
 
 def write(store, data):
     for (pixel, gain), value in data.items():
@@ -42,7 +44,7 @@ def write(store, data):
         )
 
 
-def extract_data(inputfiles, outpath, calibpath=None, extrapath=None, a=None, b=None):
+def extract_data(inputfiles, outpath, memory, calibpath=None, extrapath=None, a=None, b=None):
     ''' calculate time lapse dependence for a given capacitor '''
     if not extrapath is None and calibpath is None:
         print("using: MedianTimelapseExtraOffsets")
@@ -56,6 +58,8 @@ def extract_data(inputfiles, outpath, calibpath=None, extrapath=None, a=None, b=
     else:
         print("using: --")
         calib = lambda x: x
+
+    p = psutil.Process(os.getpid())
 
     with pd.HDFStore(outpath, mode='w', comp_level=5, comp_lib='blosc') as store:
 
@@ -92,21 +96,23 @@ def extract_data(inputfiles, outpath, calibpath=None, extrapath=None, a=None, b=
                         data[(pixel, gain)]['sample'].extend(sample_ids[valid])
                         data[(pixel, gain)]['adc_counts'].extend(pixel_data[gain][valid])
 
-                if (event.header.event_counter + 1) % 10000 == 0:
-
+                if p.memory_percent() > memory:
                     write(store, data)
                     data = defaultdict(lambda: defaultdict(list))
 
             write(store, data)
 
 
+
 if __name__ == '__main__':
     arguments = docopt(
         __doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0'
     )
+    arguments["--memory"] = float(arguments["--memory"])
     extract_data(
         arguments['<inputfiles>'],
         outpath=arguments['--outpath'],
         calibpath=arguments["--calib"],
-        extrapath=arguments["--extra"]
+        extrapath=arguments["--extra"],
+        memory=arguments["--memory"]
     )
