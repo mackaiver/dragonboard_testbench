@@ -9,12 +9,36 @@ from functools import partial
 from matplotlib.colors import ColorConverter
 import os
 import sys
+import inspect
+from io import StringIO
 
 from .io import EventGenerator
 from .calibration import TimelapseCalibration, TimelapseCalibrationExtraOffsets
 
 color_converter = ColorConverter()
 
+sys.path = ["."] + sys.path
+try:
+    import dragon_analysis as analysis
+except ImportError:
+    from . import example_analysis as analysis
+print(analysis.__file__)
+
+mandatory_parameters = {'axis', 'stop_cell', 'data', 'gain', 'channel'}
+analysis_functions = {
+    name:func for name, func in inspect.getmembers(analysis, inspect.isfunction) if set(inspect.signature(func).parameters) == mandatory_parameters
+    }
+
+colors = [
+    "#E24A33",
+    "#348ABD",
+    "#988ED5",
+    "#777777",
+    "#FBC15E",
+    "#8EBA42",
+    "#FFB5B8",
+    "#E24A33",
+    ]
 
 class NavigationToolbar(NavigationToolbar2QT):
     toolitems = [t for t in NavigationToolbar2QT.toolitems if
@@ -40,7 +64,7 @@ class FigureCanvas(FigureCanvasQTAgg):
 
 class DragonBrowser(QtGui.QMainWindow):
     def __init__(self, filename=None, calibfile=None, extra_offset_file=None, start=None, **kwargs):
-        QtGui.QMainWindow.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
         self.setWindowTitle('DragonBrowser')
 
@@ -57,20 +81,25 @@ class DragonBrowser(QtGui.QMainWindow):
         else:
             self.calib = lambda x: x
 
-        self.generator = EventGenerator(self.filename)
-
-        if start is not None:
-            for i in range(start):
-                next(self.generator)
-
+        self.generator = EventGenerator(self.filename, start=start)
         self.dragon_event = self.calib(next(self.generator))
         self.gains = self.dragon_event.data.dtype.names
         self.n_channels = self.dragon_event.data.shape[0]
+        self.is_channel_active = []
+        self.channel_color_choice = []
         self.init_gui()
 
     def init_gui(self):
-        self.canvas = FigureCanvas(self, 12.8, 7.2)
-        self.setCentralWidget(self.canvas)
+        right_part = QtGui.QWidget()
+        main_window = QtGui.QWidget()
+        main_hbox = QtGui.QHBoxLayout()
+        right_vbox = QtGui.QVBoxLayout()
+        main_window.setLayout(main_hbox)
+        right_part.setLayout(right_vbox)
+        self.setCentralWidget(main_window)
+        
+
+        self.canvas = FigureCanvas(parent=self, width=12.8, height=7.2)
         self.fig = self.canvas.fig
 
         self.axs = {'high': self.fig.add_subplot(2, 1, 2)}
@@ -85,56 +114,61 @@ class DragonBrowser(QtGui.QMainWindow):
 
         bottom_frame = QtGui.QFrame()
         layout = QtGui.QHBoxLayout(bottom_frame)
-        self.text = QtGui.QLineEdit(bottom_frame)
-        self.text.setReadOnly(True)
-        self.text.setFocusPolicy(QtCore.Qt.NoFocus)
-        layout.addWidget(self.text)
+        self.event_text = QtGui.QLineEdit(bottom_frame)
+        self.event_text.setReadOnly(True)
+        self.event_text.setFocusPolicy(QtCore.Qt.NoFocus)
+        layout.addWidget(self.event_text)
 
-        self.plots = defaultdict(dict)
+        
         for channel in range(self.n_channels):
-            for gain in self.gains:
-                plot, = self.axs[gain].plot(
-                    [], [], '.:', ms=10, mew=1, label='Ch{}'.format(channel)
-                )
-                plot.set_visible(False)
-                self.plots[gain][channel] = plot
-
-            button = QtGui.QPushButton(bottom_frame)
-            button.setStyleSheet('background-color: rgb({}, {}, {});'.format(
-                *mpl2rgb(plot.get_color())
-            ))
-            button.clicked.connect(partial(
-                self.changeColor, channel=channel, button=button)
-            )
-            button.setFocusPolicy(QtCore.Qt.NoFocus)
-            layout.addWidget(button)
-
             cb = QtGui.QCheckBox(str(channel), bottom_frame)
+            self.is_channel_active.append(cb)
+
             cb.setFocusPolicy(QtCore.Qt.NoFocus)
+            if channel != 7:
+                cb.toggle()
+
+            layout.addWidget(cb)
+
+            color_choice = QtGui.QPushButton(bottom_frame)
+            self.channel_color_choice.append(color_choice)
+            color_choice.setStyleSheet('background-color: {}'.format(colors[channel]))
+            color_choice.clicked.connect(partial(
+                self.changeColor, channel=channel, button=color_choice)
+            )
+            color_choice.setFocusPolicy(QtCore.Qt.NoFocus)
+            layout.addWidget(color_choice)
+
+        for cb in self.is_channel_active:
             cb.stateChanged.connect(
                 partial(self.toggle_channel, channel=channel)
             )
-            if channel != 7:
-                cb.toggle()
-            layout.addWidget(cb)
 
-        cb = QtGui.QCheckBox('Rescale', bottom_frame)
-        cb.setFocusPolicy(QtCore.Qt.NoFocus)
-        cb.toggle()
-        layout.addWidget(cb)
-        self.rescale_box = cb
 
-        cb = QtGui.QCheckBox('Show Cell ID', bottom_frame)
-        cb.setFocusPolicy(QtCore.Qt.NoFocus)
-        cb.stateChanged.connect(self.update)
-        layout.addWidget(cb)
-        self.cb_physical = cb
+        self.rescale_box = QtGui.QCheckBox('Rescale', bottom_frame)
+        self.rescale_box.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.rescale_box.toggle()
+        layout.addWidget(self.rescale_box)
+        
+        self.cb_physical = QtGui.QCheckBox('Show Cell ID', bottom_frame)
+        self.cb_physical.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.cb_physical.stateChanged.connect(self.update)
+        layout.addWidget(self.cb_physical)
 
-        button = QtGui.QPushButton(bottom_frame)
-        button.clicked.connect(self.next_event)
-        button.setFocusPolicy(QtCore.Qt.NoFocus)
-        button.setText('Next Event')
-        layout.addWidget(button)
+        btn_next_event = QtGui.QPushButton(bottom_frame)
+        btn_next_event.clicked.connect(self.next_event)
+        btn_next_event.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_next_event.setText('Next Event')
+        layout.addWidget(btn_next_event)
+
+        self.analysis_choice = QtGui.QListWidget(right_part)
+        self.analysis_choice.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        for name in analysis_functions:
+            self.analysis_choice.addItem(name)
+        self.analysis_choice.itemSelectionChanged.connect(self.update)
+        
+        self.analysis_output = QtGui.QPlainTextEdit(right_part)
+                
 
         self.statusBar().insertWidget(0, bottom_frame)
         for ax in self.axs.values():
@@ -142,33 +176,47 @@ class DragonBrowser(QtGui.QMainWindow):
         self.axs['high'].set_xlabel('Time Slice')
 
         self.fig.tight_layout()
+
+
+
+        
+        right_vbox.addWidget(self.analysis_choice)
+        right_vbox.addWidget(self.analysis_output)
+
+        main_hbox.addWidget(self.canvas)
+        main_hbox.addWidget(right_part)
+
+
+
+
         self.update()
 
     def changeColor(self, channel, button):
-        diag = QtGui.QColorDialog(self)
-        color = diag.getColor().name()
+        color = QtGui.QColorDialog(self).getColor().name()
         button.setStyleSheet('background-color: {}'.format(color))
-
-        for gain in self.gains:
-            self.plots[gain][channel].set_color(color)
-        self.canvas.draw()
+        self.update()
 
     def toggle_channel(self, channel):
-        for gain in self.gains:
-            plot = self.plots[gain][channel]
-            plot.set_visible(not plot.get_visible())
-        self.canvas.draw()
+        self.update()
 
     def update(self):
         event = self.dragon_event
 
         for gain in self.gains:
+            self.axs[gain].clear()
             for channel in range(event.data.shape[0]):
-                stop_cell = event.header.stop_cells[channel][gain]
-                x = np.arange(event.roi)
-                if self.cb_physical.isChecked():
-                    x = (x + stop_cell) % 4096
-                self.plots[gain][channel].set_data(x, event.data[gain][channel])
+                if self.is_channel_active[channel].isChecked():
+                    stop_cell = event.header.stop_cells[channel][gain]
+                    x = np.arange(event.roi)
+                    if self.cb_physical.isChecked():
+                        x = (x + stop_cell) % 4096
+                    self.axs[gain].plot(
+                        x, 
+                        event.data[gain][channel], 
+                        label='Ch{}'.format(channel), 
+                        drawstyle="steps",
+                        color=self.channel_color_choice[channel].styleSheet()[18:]
+                    )
 
         for ax in self.axs.values():
             ax.relim()
@@ -182,10 +230,30 @@ class DragonBrowser(QtGui.QMainWindow):
             self.axs['high'].set_xlabel('Sample ID')
             self.axs['high'].set_xlim(-0.5, event.roi)
 
+        self.analysis()
         self.fig.canvas.draw()
-        self.text.setText('Event: {}'.format(
+        self.event_text.setText('Event: {}'.format(
             self.dragon_event.header.event_counter
         ))
+
+    def analysis(self):
+        try:
+            old_stdout = sys.stdout
+            sys.stdout = mystdout = StringIO()
+
+            analysis_choice = [ analysis_functions[item.text()] for item in self.analysis_choice.selectedItems() ]
+
+            gain = "high"
+            for func in analysis_choice:
+                for channel in range(self.dragon_event.data.shape[0]):
+                    if self.is_channel_active[channel].isChecked():
+                        stop_cell = self.dragon_event.header.stop_cells[channel][gain]
+                        data = self.dragon_event.data[gain][channel]
+                        func(channel=channel, gain=gain, data=data, stop_cell=stop_cell, axis=self.axs[gain])
+
+            self.analysis_output.setPlainText(mystdout.getvalue())
+        finally:
+            sys.stdout = old_stdout
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Right:

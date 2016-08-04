@@ -62,7 +62,7 @@ class AbstractEventGenerator(object):
     header_size = None
     Event = Event
 
-    def __init__(self, path, max_events=None):
+    def __init__(self, path, max_events=None, start=None):
         self.path = os.path.realpath(path)
 
         self.file_descriptor = open(self.path, "rb")
@@ -86,6 +86,10 @@ class AbstractEventGenerator(object):
             ]
         )
         self._alarm_previous_was_called = False
+
+        start = start if start is not None else 0
+        for i in range(start):
+            next(self)
 
     def __repr__(self):
         return(
@@ -419,11 +423,11 @@ version_map = {
 }
 
 
-def EventGenerator(path, max_events=None, version=None):
+def EventGenerator(path, version=None, **kwargs):
     if version is None:
-        return version_map[guess_version(path)](path, max_events)
+        return version_map[guess_version(path)](path, **kwargs)
     else:
-        return version_map[version](path, max_events)
+        return version_map[version](path, **kwargs)
 
 
 def guess_version(path):
